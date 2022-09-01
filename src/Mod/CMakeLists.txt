@@ -144,3 +144,7 @@ endif(BUILD_TUX)
 if(BUILD_WEB)
   add_subdirectory(Web)
 endif(BUILD_WEB)
+
+if(BUILD_CLIPBOARD)
+  add_subdirectory(Clipboard)
+endif(BUILD_CLIPBOARD)
