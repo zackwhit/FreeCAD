@@ -11,7 +11,21 @@
 
 [![Release](https://img.shields.io/github/release/freecad/freecad.svg)](https://github.com/freecad/freecad/releases/latest) [![Master][freecad-master-status]][gitlab-branch-master] [![Crowdin](https://d322cqt584bo4o.cloudfront.net/freecad/localized.svg)](https://crowdin.com/project/freecad) [![Gitter](https://img.shields.io/gitter/room/freecad/freecad.svg)](https://gitter.im/freecad/freecad?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/FreeCAD/FreeCAD.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/FreeCAD/FreeCAD/context:python) [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/FreeCAD/FreeCAD.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/FreeCAD/FreeCAD/context:cpp) [![Liberapay](https://img.shields.io/liberapay/receives/FreeCAD.svg?logo=liberapay)](https://liberapay.com/FreeCAD)
 
-<img src="https://user-images.githubusercontent.com/1828501/174066870-1692005b-f8d7-43fb-a289-6d2f07f73d7f.png" width="800"/>
+Neohertz (My 'brand' name) Specifics
+-------------------------------------------
+This fork serves as sort of learning and testing grounds for my efforts in
+trying to contribute to FreeCAD. At the point of writing this, I'm solidly
+in the learning phase. I use my [website](https://www.zackwhitlock.com/) to take notes and supply
+exposition about the process and changes I make.
+
+
+### Desired Features
+- Set dimension to paramentric (send to spreadsheet)
+- Paste-into
+- Smart dependancy selector
+- Grab-n-Drag pockets and pads
+- Beautification
+
 
 Overview
 --------
