@@ -97,7 +97,7 @@ public:
      *               silently returns nullptr, otherwise throw a Base::Exception.
      *               Default is false.
      */
-    TopoDS_Shape getVerifiedFace(bool silent = false) const;
+    TopoDS_Shape getVerifiedFace(bool silent = false, bool usePoints = false) const;
 
     /// Returns the wires the sketch is composed of
     std::vector<TopoDS_Wire> getProfileWires() const;

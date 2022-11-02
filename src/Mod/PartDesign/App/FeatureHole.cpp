@@ -1633,10 +1633,10 @@ static gp_Pnt toPnt(gp_Vec dir)
 
 App::DocumentObjectExecReturn* Hole::execute()
 {
-     TopoDS_Shape profileshape;
+    TopoDS_Shape profileshape;
     try {
-
-        profileshape = getVerifiedFace();
+        // No longer using verified face...
+        //profileshape = getVerifiedFace();
     }
     catch (const Base::Exception& e) {
         return new App::DocumentObjectExecReturn(e.what());
@@ -1664,9 +1664,9 @@ App::DocumentObjectExecReturn* Hole::execute()
 
         base.Move(invObjLoc);
 
-        if (profileshape.IsNull())
-            return new App::DocumentObjectExecReturn("Hole error: Creating a face from sketch failed");
-        profileshape.Move(invObjLoc);
+        //if (profileshape.IsNull())
+        //    return new App::DocumentObjectExecReturn("Hole error: Creating a face from sketch failed");
+        //profileshape.Move(invObjLoc);
 
         /* Build the prototype hole */
 
@@ -1968,33 +1968,86 @@ gp_Vec Hole::computePerpendicular(const gp_Vec& zDir) const
 
 TopoDS_Compound Hole::findHoles(const TopoDS_Shape& profileshape, const TopoDS_Shape& protohole) const
 {
+    gp_Pnt loc;
+
     BRep_Builder builder;
+    // Will contain a bunch of our hole "negatives", as set up in Hole::execute()
     TopoDS_Compound holes;
     builder.MakeCompound(holes);
-    TopTools_IndexedMapOfShape edgeMap;
-    TopExp::MapShapes(profileshape, TopAbs_EDGE, edgeMap);
-    for (int i = 1; i <= edgeMap.Extent(); i++) {
-        Standard_Real c_start;
-        Standard_Real c_end;
-        TopoDS_Edge edge = TopoDS::Edge(edgeMap(i));
-        Handle(Geom_Curve) c = BRep_Tool::Curve(edge, c_start, c_end);
-
-        // Circle?
-        if (c->DynamicType() != STANDARD_TYPE(Geom_Circle))
-            continue;
-
-        Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(c);
-        gp_Pnt loc = circle->Axis().Location();
+    // Create a 'bucket' to hold all of edges we tear out of the profileShape
+    //TopTools_IndexedMapOfShape edgeMap;
+    // Fill said bucket
+    //TopExp::MapShapes(profileshape, TopAbs_EDGE, edgeMap);
+    // Loop through bucket looking for circles, grabbing their centers
+    //for (int i = 1; i <= edgeMap.Extent(); i++) {
+    //    Standard_Real c_start;
+    //    Standard_Real c_end;
+    //    TopoDS_Edge edge = TopoDS::Edge(edgeMap(i));
+    //    Handle(Geom_Curve) c = BRep_Tool::Curve(edge, c_start, c_end);
 
 
-        gp_Trsf localSketchTransformation;
+    //    // Circle?
+    //    if (c->DynamicType() == STANDARD_TYPE(Geom_Circle)) {
+    //        Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(c);
+    //        loc = circle->Axis().Location();
+    //        Base::Console().Log("Circle found.\n");
+    //    } else if (false) { // Point? 
+    //        // Print out what it actually is?
+    //        continue;
+    //    } else {
+    //        continue;
+    //    }
+
+
+    //    gp_Trsf localSketchTransformation;
+    //    localSketchTransformation.SetTranslation(gp_Pnt(0, 0, 0),
+    //        gp_Pnt(loc.X(), loc.Y(), loc.Z()));
+
+    //    // Copy the basic hole "negative"
+    //    TopoDS_Shape copy = protohole;
+    //    // Move the copy to the detected location
+    //    copy.Move(localSketchTransformation);
+    //    // Add the copy to the array of holes we have
+    //    //builder.Add(holes, copy);
+    //}
+
+    // Get the actual shape "container" of the sketch.
+    auto shape = getProfileShape();
+    auto vertices = shape.getSubTopoShapes(TopAbs_VERTEX);
+    // Search through it for vertices
+    for (auto vertex : vertices) {
+        //TopoDS_Vertex v = vertex.getShape();
+        TopoDS_Shape v = vertex.getShape();
+        //loc.Transform(v.Location().Transformation());
+
+        // Convert to vertex
+        TopoDS_Vertex v2 = TopoDS::Vertex(v);
+        // Get point
+        loc = BRep_Tool::Pnt(v2);
+
+        //gp_Vec zDir(SketchVector.x, SketchVector.y, SketchVector.z);
+
+        // Print out the rotation of the point
+        gp_Trsf skT = v2.Location().Transformation();
+        //Base::Console().Log("Vertex Rot: X%d Y%d Z%d\n", skT.GetRotation().X(), skT.GetRotation().Y(), skT.GetRotation().Z());
+
+        // Set orientation of point to sketch's orientation?
+        // Sketch orientation is available from getVerifiedFace, I think.
+        gp_Trsf localSketchTransformation;//getVerifiedFace().Location().Transformation();
+        //gp_Trsf localSketchTransformation;
         localSketchTransformation.SetTranslation(gp_Pnt(0, 0, 0),
             gp_Pnt(loc.X(), loc.Y(), loc.Z()));
 
+        // Copy the basic hole "negative"
         TopoDS_Shape copy = protohole;
+        // Move the copy to the detected location
         copy.Move(localSketchTransformation);
+        //copy.Move(v.Location().Transformation());
+        Base::Console().Log("Vertex found. X%d Y%d Z%d\n", loc.X(), loc.Y(), loc.Z());
+        // Add the copy to the array of holes we have
         builder.Add(holes, copy);
     }
+    // Report them.
 
     return holes;
 }

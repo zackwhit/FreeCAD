@@ -56,6 +56,7 @@
 #include <App/Document.h>
 #include <App/OriginFeature.h>
 #include <Base/Reader.h>
+#include <Base/Console.h>
 #include <Mod/Part/App/FaceMakerCheese.h>
 
 #include "FeatureSketchBased.h"
@@ -176,7 +177,9 @@ Part::TopoShape ProfileBased::getProfileShape() const
     return shape;
 }
 
-TopoDS_Shape ProfileBased::getVerifiedFace(bool silent) const {
+TopoDS_Shape ProfileBased::getVerifiedFace(bool silent, bool usePoints) const {
+
+    silent = false;
 
     App::DocumentObject* result = Profile.getValue();
     const char* err = nullptr;
@@ -186,19 +189,35 @@ TopoDS_Shape ProfileBased::getVerifiedFace(bool silent) const {
         err = "No profile linked";
     }
     else if (AllowMultiFace.getValue()) {
+        // Enters here 
         try {
             auto shape = getProfileShape();
             if (shape.isNull())
                 err = "Linked shape object is empty";
             else {
+                // Finds it to be not null
                 auto faces = shape.getSubTopoShapes(TopAbs_FACE);
+                auto edges = shape.getSubTopoShapes(TopAbs_EDGE);
                 if (faces.empty()) {
-                    if (!shape.hasSubShape(TopAbs_WIRE))
-                        shape = shape.makeWires();
-                    if (shape.hasSubShape(TopAbs_WIRE))
-                        shape = shape.makeFace(nullptr, "Part::FaceMakerBullseye");
-                    else
-                        err = "Cannot make face from profile";
+                    // Check to see if we don't have any edges either 
+                    if (!edges.empty()) {
+                        if (!shape.hasSubShape(TopAbs_WIRE))
+                            shape = shape.makeWires(); // errors in here
+                            // Error occurs when going to make COMPOUND, called in makeWires()
+
+                        if (shape.hasSubShape(TopAbs_WIRE))
+                            shape = shape.makeFace(nullptr, "Part::FaceMakerBullseye");
+                        else
+                            err = "Cannot make face from profile";
+                    } else {
+                        if (usePoints)
+                        {
+                            // Make a face from 3 points? 
+                            return TopoDS_Face();
+                        } else {
+                            err = "Nothing valid found";
+                        }
+                    }
                 }
                 else if (faces.size() == 1)
                     shape = faces.front();
@@ -246,6 +265,9 @@ TopoDS_Shape ProfileBased::getVerifiedFace(bool silent) const {
         else
             err = "Linked object is neither Sketch, Part2DObject or Part::Feature";
     }
+
+
+    Base::Console().Log("Could not verify a face. \n");
 
     if (!silent && err) {
         throw Base::RuntimeError(err);
@@ -566,7 +588,7 @@ double ProfileBased::getThroughAllLength() const
 {
     TopoDS_Shape profileshape;
     TopoDS_Shape base;
-    profileshape = getVerifiedFace();
+    profileshape = getVerifiedFace(true, true);
     base = getBaseShape();
     Bnd_Box box;
     BRepBndLib::Add(base, box);
@@ -933,7 +955,7 @@ double ProfileBased::getReversedAngle(const Base::Vector3d & b, const Base::Vect
 {
     try {
         Part::Feature* obj = getVerifiedObject();
-        TopoDS_Shape sketchshape = getVerifiedFace();
+        TopoDS_Shape sketchshape = getVerifiedFace(true, true);
 
         // get centre of gravity of the sketch face
         GProp_GProps props;
@@ -1110,7 +1132,7 @@ Base::Vector3d ProfileBased::getProfileNormal() const {
         SketchOrientation.multVec(SketchVector, SketchVector);
     }
     else {
-        TopoDS_Shape shape = getVerifiedFace(true);
+        TopoDS_Shape shape = getVerifiedFace(true, true);
         if (shape.IsNull())
             return SketchVector;
 
