@@ -60,6 +60,8 @@ protected:
 
     void onChange() override;
     virtual void setNumberExpression(App::NumberExpression*) = 0;
+    virtual void showIcon();
+    virtual void validateInput();
     void resizeWidget();
 
     bool handleKeyEvent(const QString&);

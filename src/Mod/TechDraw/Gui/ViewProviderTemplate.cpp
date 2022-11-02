@@ -60,7 +60,7 @@ ViewProviderTemplate::ViewProviderTemplate()
 {
     sPixmap = "TechDraw_TreePageTemplate";
 
-    DisplayMode.setStatus(App::Property::Hidden,true);
+    DisplayMode.setStatus(App::Property::Hidden, true);
 }
 
 ViewProviderTemplate::~ViewProviderTemplate()
@@ -98,7 +98,7 @@ void ViewProviderTemplate::onChanged(const App::Property *prop)
             hide();
         }
     }
-    
+
     Gui::ViewProviderDocumentObject::onChanged(prop);
 }
 
@@ -118,7 +118,7 @@ void ViewProviderTemplate::hide()
     if (qTemplate) {
         qTemplate->hide();
     }
-    
+
     ViewProviderDocumentObject::hide();
 }
 
@@ -134,16 +134,15 @@ QGITemplate* ViewProviderTemplate::getQTemplate()
         auto page = dt->getParentPage();
         Gui::ViewProvider* vp = Gui::Application::Instance->getDocument(dt->getDocument())->getViewProvider(page);
         TechDrawGui::ViewProviderPage* vpp = dynamic_cast<TechDrawGui::ViewProviderPage*>(vp);
-        if (vpp != nullptr) {
+        if (vpp)
             return vpp->getQGSPage()->getTemplate();
-        }
     }
     return nullptr;
 }
 
 void ViewProviderTemplate::setMarkers(bool state)
 {
-//    Base::Console().Message("VPT::setMarkers(%d)\n",state);
+//    Base::Console().Message("VPT::setMarkers(%d)\n", state);
     QGITemplate* qTemplate = getQTemplate();
     QGISVGTemplate* qSvgTemplate = dynamic_cast<QGISVGTemplate*> (qTemplate);
     if (qSvgTemplate) {

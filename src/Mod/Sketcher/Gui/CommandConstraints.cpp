@@ -39,7 +39,6 @@
 #include <Gui/SelectionObject.h>
 #include <Gui/CommandT.h>
 #include <Gui/MainWindow.h>
-#include <Gui/DlgEditFileIncludePropertyExternal.h>
 #include <Gui/Action.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/DlgCheckableMessageBox.h>
@@ -94,17 +93,17 @@ void finishDatumConstraint (Gui::Command* cmd, Sketcher::SketchObject* sketch, b
 
     // Get the latest constraint
     const std::vector<Sketcher::Constraint *> &ConStr = sketch->Constraints.getValues();
-    int lastConstraintIndex = ConStr.size() - 1;
+    auto lastConstraintIndex = ConStr.size() - 1;
     Sketcher::Constraint *constr = ConStr[lastConstraintIndex];
     auto lastConstraintType = constr->Type;
 
     // Guess some reasonable distance for placing the datum text
     Gui::Document *doc = cmd->getActiveGuiDocument();
-    float scaleFactor = 1.f;
-    float labelPosition = 0.f;
-    float labelPositionRandomness = 0.f;
+    float scaleFactor = 1.0;
+    double labelPosition = 0.0;
+    float labelPositionRandomness = 0.0;
 
-    if(lastConstraintType == Radius || lastConstraintType == Diameter) {
+    if (lastConstraintType == Radius || lastConstraintType == Diameter) {
         labelPosition = hGrp->GetFloat("RadiusDiameterConstraintDisplayBaseAngle", 15.0) * (M_PI / 180); // Get radius/diameter constraint display angle
         labelPositionRandomness = hGrp->GetFloat("RadiusDiameterConstraintDisplayAngleRandomness", 0.0) * (M_PI / 180); // Get randomness
 
@@ -465,10 +464,10 @@ void SketcherGui::doEndpointTangency(Sketcher::SketchObject* Obj,
             std::swap(PosId1,PosId2);
         }
         // GeoId1 is the B-spline now
-        } // end of code supports simple B-spline endpoint tangency
+    } // end of code supports simple B-spline endpoint tangency
 
-        Gui::cmdAppObjectArgs(Obj, "addConstraint(Sketcher.Constraint('Tangent',%d,%d,%d,%d)) ",
-                GeoId1,static_cast<int>(PosId1),GeoId2,static_cast<int>(PosId2));
+    Gui::cmdAppObjectArgs(Obj, "addConstraint(Sketcher.Constraint('Tangent',%d,%d,%d,%d)) ",
+            GeoId1,static_cast<int>(PosId1),GeoId2,static_cast<int>(PosId2));
 }
 
 void SketcherGui::doEndpointToEdgeTangency( Sketcher::SketchObject* Obj, int GeoId1, PointPos PosId1, int GeoId2)
@@ -1880,7 +1879,7 @@ protected:
     void activated(int iMsg) override;
     void applyConstraint(std::vector<SelIdPair> &selSeq, int seqIndex) override;
     // returns true if a substitution took place
-    bool substituteConstraintCombinations(SketchObject * Obj,
+    static bool substituteConstraintCombinations(SketchObject * Obj,
                                           int GeoId1, PointPos PosId1,
                                           int GeoId2, PointPos PosId2);
 };
@@ -1918,7 +1917,8 @@ bool CmdSketcherConstrainCoincident::substituteConstraintCombinations(SketchObje
             (((*it)->First == GeoId1 && (*it)->Second == GeoId2) ||
             ((*it)->Second == GeoId1 && (*it)->First == GeoId2)) ) {
 
-            Gui::Command::openCommand(QT_TRANSLATE_NOOP("Command", "Swap edge tangency with ptp tangency"));
+            // NOTE: This function does not either open or commit a command as it is used for group addition
+            // it relies on such infrastructure being provided by the caller.
 
             if( constraintExists ) {
                 // try to remove any pre-existing direct coincident constraints
@@ -1928,10 +1928,6 @@ bool CmdSketcherConstrainCoincident::substituteConstraintCombinations(SketchObje
             Gui::cmdAppObjectArgs(Obj, "delConstraint(%i)", j);
 
             doEndpointTangency(Obj, GeoId1, GeoId2, PosId1, PosId2);
-
-            commitCommand();
-            Obj->solve(); // The substitution requires a solve() so that the autoremove redundants works when Autorecompute not active.
-            tryAutoRecomputeIfNotSolve(Obj);
 
             notifyConstraintSubstitutions(QObject::tr("Endpoint to endpoint tangency was applied instead."));
 
@@ -1999,7 +1995,7 @@ void CmdSketcherConstrainCoincident::activated(int iMsg)
         getIdsFromName(SubNames[i], Obj, GeoId2, PosId2);
 
         // check if the edge already has a Block constraint
-        if ( areBothPointsOrSegmentsFixed(Obj,GeoId1,GeoId2) ) {
+        if (areBothPointsOrSegmentsFixed(Obj,GeoId1,GeoId2)) {
             showNoConstraintBetweenFixedGeometry();
             return;
         }
@@ -2008,8 +2004,10 @@ void CmdSketcherConstrainCoincident::activated(int iMsg)
         // arise and substitute them with more appropriate counterparts, examples:
         // - coincidence + tangency on edge
         // - point on object + tangency on edge
-        if(substituteConstraintCombinations(Obj, GeoId1, PosId1,GeoId2, PosId2))
-            return;
+        if (substituteConstraintCombinations(Obj, GeoId1, PosId1,GeoId2, PosId2)) {
+            constraintsAdded = true;
+            break;
+        }
 
         // check if this coincidence is already enforced (even indirectly)
         bool constraintExists=Obj->arePointsCoincident(GeoId1,PosId1,GeoId2,PosId2);
@@ -2046,31 +2044,28 @@ void CmdSketcherConstrainCoincident::applyConstraint(std::vector<SelIdPair> &sel
         Sketcher::PointPos PosId1 = selSeq.at(0).PosId, PosId2 = selSeq.at(1).PosId;
 
         // check if the edge already has a Block constraint
-        if ( areBothPointsOrSegmentsFixed(Obj, GeoId1, GeoId2) ) {
+        if (areBothPointsOrSegmentsFixed(Obj, GeoId1, GeoId2)) {
             showNoConstraintBetweenFixedGeometry();
             return;
         }
-
-        // check if as a consequence of this command undesirable combinations of constraints would
-        // arise and substitute them with more appropriate counterparts, examples:
-        // - coincidence + tangency on edge
-        // - point on object + tangency on edge
-        if(substituteConstraintCombinations(Obj, GeoId1, PosId1,GeoId2, PosId2))
-            return;
 
         // undo command open
         Gui::Command::openCommand(QT_TRANSLATE_NOOP("Command", "Add coincident constraint"));
 
         // check if this coincidence is already enforced (even indirectly)
         bool constraintExists = Obj->arePointsCoincident(GeoId1, PosId1, GeoId2, PosId2);
-        if (!constraintExists && (GeoId1 != GeoId2)) {
+        if (substituteConstraintCombinations(Obj, GeoId1, PosId1,GeoId2, PosId2)) {
+        }
+        else if (!constraintExists && (GeoId1 != GeoId2)) {
             Gui::cmdAppObjectArgs(sketchgui->getObject(), "addConstraint(Sketcher.Constraint('Coincident', %d, %d, %d, %d)) ",
                 GeoId1, static_cast<int>(PosId1), GeoId2, static_cast<int>(PosId2));
-            Gui::Command::commitCommand();
         }
         else {
             Gui::Command::abortCommand();
+            return;
         }
+        Gui::Command::commitCommand();
+        tryAutoRecompute(Obj);
 
         break;
     }
@@ -2436,7 +2431,7 @@ protected:
     void activated(int iMsg) override;
     void applyConstraint(std::vector<SelIdPair> &selSeq, int seqIndex) override;
     // returns true if a substitution took place
-    bool substituteConstraintCombinations(SketchObject * Obj,
+    static bool substituteConstraintCombinations(SketchObject * Obj,
                                           int GeoId1, PointPos PosId1, int GeoId2);
 };
 
@@ -2649,15 +2644,10 @@ void CmdSketcherConstrainPointOnObject::applyConstraint(std::vector<SelIdPair> &
         return;
     }
 
-    if(substituteConstraintCombinations(Obj, GeoIdVt, PosIdVt, GeoIdCrv)) {
-        commitCommand();
-        tryAutoRecompute(Obj);
-        return;
-    }
-
     if (allOK) {
-        Gui::cmdAppObjectArgs(sketchgui->getObject(), "addConstraint(Sketcher.Constraint('PointOnObject',%d,%d,%d)) ",
-             GeoIdVt, static_cast<int>(PosIdVt), GeoIdCrv);
+        if (!substituteConstraintCombinations(Obj, GeoIdVt, PosIdVt, GeoIdCrv))
+            Gui::cmdAppObjectArgs(  sketchgui->getObject(), "addConstraint(Sketcher.Constraint('PointOnObject',%d,%d,%d)) ",
+                                    GeoIdVt, static_cast<int>(PosIdVt), GeoIdCrv);
 
         commitCommand();
         tryAutoRecompute(Obj);
@@ -3979,7 +3969,7 @@ protected:
     void activated(int iMsg) override;
     void applyConstraint(std::vector<SelIdPair> &selSeq, int seqIndex) override;
     // returns true if a substitution took place
-    bool substituteConstraintCombinations(SketchObject * Obj, int GeoId1, int GeoId2);
+    static bool substituteConstraintCombinations(SketchObject * Obj, int GeoId1, int GeoId2);
 };
 
 CmdSketcherConstrainTangent::CmdSketcherConstrainTangent()

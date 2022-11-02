@@ -48,6 +48,7 @@
 #include <App/Material.h>
 #include <Base/Console.h>
 #include <Base/Parameter.h>
+#include <Base/Tools.h>
 #include <Base/Vector3D.h>
 #include <Gui/ViewProvider.h>
 
@@ -55,6 +56,7 @@
 #include <Mod/TechDraw/App/DrawUtil.h>
 #include <Mod/TechDraw/App/DrawViewPart.h>
 #include <Mod/TechDraw/App/DrawViewSection.h>
+#include <Mod/TechDraw/App/DrawComplexSection.h>
 #include <Mod/TechDraw/App/DrawHatch.h>
 #include <Mod/TechDraw/App/DrawGeomHatch.h>
 #include <Mod/TechDraw/App/DrawViewDetail.h>
@@ -74,9 +76,6 @@
 #include "QGISectionLine.h"
 #include "QGICenterLine.h"
 #include "QGIHighlight.h"
-#include "QGCustomBorder.h"
-#include "QGCustomLabel.h"
-#include "QGCustomRect.h"
 #include "QGIMatting.h"
 #include "QGIViewPart.h"
 #include "ViewProviderGeomHatch.h"
@@ -104,7 +103,7 @@ QGIViewPart::QGIViewPart() :
     setFlag(QGraphicsItem::ItemIsSelectable, true);
     setFlag(QGraphicsItem::ItemIsMovable, true);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
-    setFlag(QGraphicsItem::ItemSendsGeometryChanges,true);
+    setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
 
     showSection = false;
 }
@@ -145,7 +144,7 @@ void QGIViewPart::setViewPartFeature(TechDraw::DrawViewPart *obj)
 QPainterPath QGIViewPart::drawPainterPath(TechDraw::BaseGeomPtr baseGeom) const
 {
     double rot = getViewObject()->Rotation.getValue();
-    return geomToPainterPath(baseGeom,rot);
+    return geomToPainterPath(baseGeom, rot);
 }
 
 
@@ -167,7 +166,7 @@ QPainterPath QGIViewPart::geomToPainterPath(BaseGeomPtr baseGeom, double rot)
             path.addEllipse(Rez::guiX(x),
                             Rez::guiX(y),
                             Rez::guiX(geom->radius * 2),
-                            Rez::guiX(geom->radius * 2));            //topleft@(x,y) radx,rady
+                            Rez::guiX(geom->radius * 2));            //topleft@(x, y) radx, rady
             }
             break;
         case ARCOFCIRCLE:  {
@@ -282,8 +281,8 @@ QPainterPath QGIViewPart::geomToPainterPath(BaseGeomPtr baseGeom, double rot)
                     path.cubicTo(Rez::guiX(geom->pnts[2].x), Rez::guiX(geom->pnts[2].y),
                                  Rez::guiX(geom->pnts[1].x), Rez::guiX(geom->pnts[1].y),
                                  Rez::guiX(geom->pnts[0].x), Rez::guiX(geom->pnts[0].y));
-                } else {                                                 //can only handle lines,quads,cubes
-                    Base::Console().Error("Bad pole count (%d) for BezierSegment\n",geom->poles);
+                } else {                                                 //can only handle lines, quads, cubes
+                    Base::Console().Error("Bad pole count (%d) for BezierSegment\n", geom->poles);
                     auto itBez = geom->pnts.begin() + 1;
                     for (; itBez != geom->pnts.end();itBez++)  {
                         path.lineTo(Rez::guiX((*itBez).x), Rez::guiX((*itBez).y));   //show something for debugging
@@ -305,8 +304,8 @@ QPainterPath QGIViewPart::geomToPainterPath(BaseGeomPtr baseGeom, double rot)
                     path.cubicTo(Rez::guiX(geom->pnts[1].x), Rez::guiX(geom->pnts[1].y),
                                  Rez::guiX(geom->pnts[2].x), Rez::guiX(geom->pnts[2].y),
                                  Rez::guiX(geom->pnts[3].x), Rez::guiX(geom->pnts[3].y));
-                } else {                                            //can only handle lines,quads,cubes
-                    Base::Console().Error("Bad pole count (%d) for BezierSegment\n",geom->poles);
+                } else {                                            //can only handle lines, quads, cubes
+                    Base::Console().Error("Bad pole count (%d) for BezierSegment\n", geom->poles);
                     auto itBez = geom->pnts.begin() + 1;
                     for (; itBez != geom->pnts.end();itBez++)  {
                       path.lineTo(Rez::guiX((*itBez).x), Rez::guiX((*itBez).y));         //show something for debugging
@@ -337,7 +336,7 @@ QPainterPath QGIViewPart::geomToPainterPath(BaseGeomPtr baseGeom, double rot)
                         path.cubicTo(Rez::guiX(it->pnts[2].x), Rez::guiX(it->pnts[2].y),
                                      Rez::guiX(it->pnts[1].x), Rez::guiX(it->pnts[1].y),
                                      Rez::guiX(it->pnts[0].x), Rez::guiX(it->pnts[0].y));
-                    } else {                                                 //can only handle lines,quads,cubes
+                    } else {                                                 //can only handle lines, quads, cubes
                         Base::Console().Error("Bad pole count (%d) for BezierSegment of B-spline geometry\n",
                                               it->poles);
                         path.lineTo(it->pnts[1].x, it->pnts[1].y);         //show something for debugging
@@ -366,8 +365,8 @@ QPainterPath QGIViewPart::geomToPainterPath(BaseGeomPtr baseGeom, double rot)
                                               it->poles);
                         path.lineTo(it->pnts[1].x, it->pnts[1].y);         //show something for debugging
                     }
-                } 
-            } 
+                }
+            }
             }
             break;
         case TechDraw::GENERIC: {
@@ -391,7 +390,7 @@ QPainterPath QGIViewPart::geomToPainterPath(BaseGeomPtr baseGeom, double rot)
             }
             break;
         default: {
-            Base::Console().Error("Error - geomToPainterPath - UNKNOWN geomType: %d\n",baseGeom->geomType);
+            Base::Console().Error("Error - geomToPainterPath - UNKNOWN geomType: %d\n", baseGeom->geomType);
             }
             break;
     } //sb end of switch
@@ -448,10 +447,10 @@ void QGIViewPart::drawViewPart()
     if (!vp)
         return;
 
-    float lineWidth = vp->LineWidth.getValue() * lineScaleFactor;
-    float lineWidthHid = vp->HiddenWidth.getValue() * lineScaleFactor;
-    float lineWidthIso = vp->IsoWidth.getValue() * lineScaleFactor;
-//    float lineWidthExtra = viewPart->ExtraWidth.getValue() * lineScaleFactor;
+    float lineWidth = vp->LineWidth.getValue() * lineScaleFactor;       //thick
+    float lineWidthHid = vp->HiddenWidth.getValue() * lineScaleFactor;  //thin
+    float lineWidthIso = vp->IsoWidth.getValue() * lineScaleFactor;     //graphic
+//    float lineWidthExtra = viewPart->ExtraWidth.getValue() * lineScaleFactor;  //extra
     bool showAll = vp->ShowAllEdges.getValue();
 
     prepareGeometryChange();
@@ -465,11 +464,11 @@ void QGIViewPart::drawViewPart()
         const std::vector<TechDraw::FacePtr> &faceGeoms = viewPart->getFaceGeometry();
         std::vector<TechDraw::FacePtr>::const_iterator fit = faceGeoms.begin();
         for(int i = 0 ; fit != faceGeoms.end(); fit++, i++) {
-            QGIFace* newFace = drawFace(*fit,i);
+            QGIFace* newFace = drawFace(*fit, i);
             newFace->isHatched(false);
             newFace->setFillMode(QGIFace::PlainFill);
-            TechDraw::DrawHatch* fHatch = faceIsHatched(i,hatchObjs);
-            TechDraw::DrawGeomHatch* fGeom = faceIsGeomHatched(i,geomObjs);
+            TechDraw::DrawHatch* fHatch = faceIsHatched(i, hatchObjs);
+            TechDraw::DrawGeomHatch* fGeom = faceIsGeomHatched(i, geomObjs);
             if (fGeom) {
                 const std::vector<std::string> &sourceNames = fGeom->Source.getSubValues();
                 if (!sourceNames.empty()) {
@@ -569,7 +568,7 @@ void QGIViewPart::drawViewPart()
                     std::string cTag = (*itGeom)->getCosmeticTag();
                     showItem = formatGeomFromCenterLine(cTag, item);
                 } else {
-                    Base::Console().Message("QGIVP::drawVP - edge: %d is confused - source: %d\n",i,source);
+                    Base::Console().Message("QGIVP::drawVP - edge: %d is confused - source: %d\n", i,source);
                 }
             } else {
                 TechDraw::GeomFormat* gf = viewPart->getGeomFormatBySelection(i);
@@ -581,8 +580,8 @@ void QGIViewPart::drawViewPart()
                 }
             }
 
-            addToGroup(item);                       //item is at scene(0,0), not group(0,0)
-            item->setPos(0.0,0.0);                  //now at group(0,0)
+            addToGroup(item);                       //item is at scene(0, 0), not group(0, 0)
+            item->setPos(0.0, 0.0);                  //now at group(0, 0)
             item->setPath(drawPainterPath(*itGeom));
             item->setZValue(ZVALUE::EDGE);
             if(!(*itGeom)->hlrVisible) {
@@ -603,7 +602,7 @@ void QGIViewPart::drawViewPart()
 //            QPainterPath edgePath=drawPainterPath(*itGeom);
 //            std::stringstream edgeId;
 //            edgeId << "QGIVP.edgePath" << i;
-//            dumpPath(edgeId.str().c_str(),edgePath);
+//            dumpPath(edgeId.str().c_str(), edgePath);
          }
     }
 
@@ -687,7 +686,7 @@ bool QGIViewPart::formatGeomFromCosmetic(std::string cTag, QGIEdge* item)
 
 bool QGIViewPart::formatGeomFromCenterLine(std::string cTag, QGIEdge* item)
 {
-//    Base::Console().Message("QGIVP::formatGeomFromCenterLine(%d)\n",sourceIndex);
+//    Base::Console().Message("QGIVP::formatGeomFromCenterLine(%d)\n", sourceIndex);
     bool result = true;
     auto partFeat( dynamic_cast<TechDraw::DrawViewPart *>(getViewObject()) );
     TechDraw::CenterLine* cl = partFeat ? partFeat->getCenterLine(cTag) : nullptr;
@@ -734,24 +733,24 @@ QGIFace* QGIViewPart::drawFace(TechDraw::FacePtr f, int idx)
            }
             wirePath.connectPath(edgePath);
         }
-//        dumpPath("wirePath:",wirePath);
+//        dumpPath("wirePath:", wirePath);
         facePath.addPath(wirePath);
     }
     facePath.setFillRule(Qt::OddEvenFill);
 
     QGIFace* gFace = new QGIFace(idx);
     addToGroup(gFace);
-    gFace->setPos(0.0,0.0);
+    gFace->setPos(0.0, 0.0);
     gFace->setOutline(facePath);
     //debug a path
     //std::stringstream faceId;
     //faceId << "facePath " << idx;
-    //dumpPath(faceId.str().c_str(),facePath);
+    //dumpPath(faceId.str().c_str(), facePath);
 
     return gFace;
 }
 
-//! Remove all existing QGIPrimPath items(Vertex,Edge,Face)
+//! Remove all existing QGIPrimPath items(Vertex, Edge, Face)
 //note this triggers scene selectionChanged signal if vertex/edge/face is selected
 void QGIViewPart::removePrimitives()
 {
@@ -773,7 +772,7 @@ void QGIViewPart::removePrimitives()
     }
 }
 
-//! Remove all existing QGIDecoration items(SectionLine,SectionMark,...)
+//! Remove all existing QGIDecoration items(SectionLine, SectionMark, ...)
 void QGIViewPart::removeDecorations()
 {
     QList<QGraphicsItem*> children = childItems();
@@ -805,7 +804,11 @@ void QGIViewPart::drawAllSectionLines()
     if (vp->ShowSectionLine.getValue()) {
         auto refs = viewPart->getSectionRefs();
         for (auto& r:refs) {
-            drawSectionLine(r, true);
+            if (r->isDerivedFrom(DrawComplexSection::getClassTypeId())) {
+                drawComplexSectionLine(r, true);
+            } else {
+                drawSectionLine(r, true);
+            }
         }
     }
 }
@@ -822,8 +825,10 @@ void QGIViewPart::drawSectionLine(TechDraw::DrawViewSection* viewSection, bool b
         return;
 
     auto vp = static_cast<ViewProviderViewPart*>(getViewProvider(getViewObject()));
-    if (!vp)
+    if (!vp) {
         return;
+    }
+    float lineWidthThin = vp->HiddenWidth.getValue() * lineScaleFactor;  //thin
 
     if (b) {
         QGISectionLine* sectionLine = new QGISectionLine();
@@ -831,7 +836,7 @@ void QGIViewPart::drawSectionLine(TechDraw::DrawViewSection* viewSection, bool b
         sectionLine->setSymbol(const_cast<char*>(viewSection->SectionSymbol.getValue()));
         sectionLine->setSectionStyle(vp->SectionLineStyle.getValue());
         sectionLine->setSectionColor(vp->SectionLineColor.getValue().asValue<QColor>());
-
+        sectionLine->setPathMode(false);
         //find the ends of the section line
         double scale = viewPart->getScale();
         std::pair<Base::Vector3d, Base::Vector3d> sLineEnds = viewSection->sectionLineEnds();
@@ -841,27 +846,91 @@ void QGIViewPart::drawSectionLine(TechDraw::DrawViewSection* viewSection, bool b
         //which way to the arrows point?
         Base::Vector3d lineDir = l2 - l1;
         lineDir.Normalize();
-        Base::Vector3d normalDir = viewSection->SectionNormal.getValue();
-        Base::Vector3d projNormal = viewPart->projectPoint(normalDir);
-        projNormal.Normalize();
         Base::Vector3d arrowDir = viewSection->SectionNormal.getValue();
-        arrowDir = - viewPart->projectPoint(arrowDir);  //arrows point reverse of sectionNormal(extrusion dir)
+        arrowDir = - viewPart->projectPoint(arrowDir);  //arrows point reverse of sectionNormal
         sectionLine->setDirection(arrowDir.x, -arrowDir.y);           //invert Y
 
         //make the section line a little longer
         double fudge = Rez::guiX(2.0 * Preferences::dimFontSizeMM());
-        sectionLine->setEnds(l1 - lineDir * fudge, 
+        sectionLine->setEnds(l1 - lineDir * fudge,
                              l2 + lineDir * fudge);
 
         //set the general parameters
         sectionLine->setPos(0.0, 0.0);
-        sectionLine->setWidth(Rez::guiX(vp->LineWidth.getValue()));
+        sectionLine->setWidth(lineWidthThin);
         double fontSize = Preferences::dimFontSizeMM();
-        sectionLine->setFont(m_font, fontSize);
+        sectionLine->setFont(getFont(), fontSize);
         sectionLine->setZValue(ZVALUE::SECTIONLINE);
         sectionLine->setRotation(- viewPart->Rotation.getValue());
         sectionLine->draw();
     }
+}
+
+void QGIViewPart::drawComplexSectionLine(TechDraw::DrawViewSection* viewSection, bool b)
+{
+    Q_UNUSED(b);
+    TechDraw::DrawViewPart *viewPart = static_cast<TechDraw::DrawViewPart *>(getViewObject());
+    if (!viewPart)
+        return;
+    if (!viewSection)
+        return;
+    auto vp = static_cast<ViewProviderViewPart*>(getViewProvider(getViewObject()));
+    if (!vp) {
+        return;
+    }
+    float lineWidthThin = vp->HiddenWidth.getValue() * lineScaleFactor;  //thin
+
+    auto dcs = static_cast<DrawComplexSection*>(viewSection);
+    BaseGeomPtrVector edges = dcs->makeSectionLineGeometry();
+    QPainterPath wirePath;
+    QPainterPath firstSeg = drawPainterPath(edges.front());
+    wirePath.connectPath(firstSeg);
+    int edgeCount = edges.size();
+    //NOTE: if the edges are not in nose to tail order, Qt will insert extra segments
+    //that will overlap the segments we add. for interupted line styles, this
+    //will make the line look continuous.  This is prevented in
+    //DrawComplexSection::makeSectionLineGeometry by calling makeNoseToTailWire
+    for (int i = 1; i < edgeCount; i++) {
+        QPainterPath edgePath = drawPainterPath(edges.at(i));
+        wirePath.connectPath(edgePath);
+    }
+
+    std::pair<Base::Vector3d, Base::Vector3d> ends = dcs->sectionLineEnds();
+    Base::Vector3d vStart = Rez::guiX(ends.first);      //already scaled by dcs
+    Base::Vector3d vEnd = Rez::guiX(ends.second);
+
+    QGISectionLine* sectionLine = new QGISectionLine();
+    addToGroup(sectionLine);
+    sectionLine->setSymbol(const_cast<char*>(viewSection->SectionSymbol.getValue()));
+    sectionLine->setSectionStyle(vp->SectionLineStyle.getValue());
+    sectionLine->setSectionColor(vp->SectionLineColor.getValue().asValue<QColor>());
+    sectionLine->setPathMode(true);
+    sectionLine->setPath(wirePath);
+    sectionLine->setEnds(vStart, vEnd);
+    if (vp->SectionLineMarks.getValue()) {
+        sectionLine->setChangePoints(dcs->getChangePointsFromSectionLine());
+    } else {
+        sectionLine->clearChangePoints();
+    }
+    if (dcs->ProjectionStrategy.isValue("Offset")) {
+        Base::Vector3d arrowDirOffset = viewSection->SectionNormal.getValue();
+        arrowDirOffset =  - viewPart->projectPoint(arrowDirOffset);         //arrows are opposite section normal
+        sectionLine->setDirection(arrowDirOffset.x, -arrowDirOffset.y);     //invert y for Qt
+    } else {
+        std::pair<Base::Vector3d, Base::Vector3d> dirsAligned = dcs->sectionArrowDirs();
+        dirsAligned.first = DrawUtil::invertY(dirsAligned.first);
+        dirsAligned.second = DrawUtil::invertY(dirsAligned.second);
+        sectionLine->setArrowDirections(dirsAligned.first, dirsAligned.second);
+    }
+
+    //set the general parameters
+    sectionLine->setPos(0.0, 0.0);
+    sectionLine->setWidth(lineWidthThin);
+    double fontSize = Preferences::dimFontSizeMM();
+    sectionLine->setFont(getFont(), fontSize);
+    sectionLine->setZValue(ZVALUE::SECTIONLINE);
+    sectionLine->setRotation(- viewPart->Rotation.getValue());
+    sectionLine->draw();
 }
 
 //TODO: use Cosmetic::CenterLine object for this to make it usable for dims.
@@ -886,36 +955,29 @@ void QGIViewPart::drawCenterLines(bool b)
         if (horiz)  {
             centerLine = new QGICenterLine();
             addToGroup(centerLine);
-            centerLine->setPos(0.0,0.0);
-            //this should work from the viewPart's bbox, not the border
-//            double scale = viewPart->getScale();
+            centerLine->setPos(0.0, 0.0);
             double width = Rez::guiX(viewPart->getBoxX());
             sectionSpan = width + sectionFudge;
-//            sectionSpan = m_border->rect().width() + sectionFudge;
             xVal = sectionSpan / 2.0;
             yVal = 0.0;
             centerLine->setIntersection(horiz && vert);
-            centerLine->setBounds(-xVal,-yVal,xVal,yVal);
+            centerLine->setBounds(-xVal, -yVal, xVal, yVal);
             centerLine->setWidth(Rez::guiX(vp->HiddenWidth.getValue()));
             centerLine->setZValue(ZVALUE::SECTIONLINE);
-//            centerLine->setRotation(viewPart->Rotation.getValue());
             centerLine->draw();
         }
         if (vert) {
             centerLine = new QGICenterLine();
             addToGroup(centerLine);
-            centerLine->setPos(0.0,0.0);
-//            double scale = viewPart->getScale();
+            centerLine->setPos(0.0, 0.0);
             double height = Rez::guiX(viewPart->getBoxY());
             sectionSpan = height + sectionFudge;
-//            sectionSpan = (m_border->rect().height() - m_label->boundingRect().height()) + sectionFudge;
             xVal = 0.0;
             yVal = sectionSpan / 2.0;
             centerLine->setIntersection(horiz && vert);
-            centerLine->setBounds(-xVal,-yVal,xVal,yVal);
+            centerLine->setBounds(-xVal, -yVal, xVal, yVal);
             centerLine->setWidth(Rez::guiX(vp->HiddenWidth.getValue()));
             centerLine->setZValue(ZVALUE::SECTIONLINE);
-//            centerLine->setRotation(viewPart->Rotation.getValue());
             centerLine->draw();
         }
     }
@@ -938,7 +1000,7 @@ void QGIViewPart::drawHighlight(TechDraw::DrawViewDetail* viewDetail, bool b)
         double fontSize = Preferences::labelFontSizeMM();
         QGIHighlight* highlight = new QGIHighlight();
         addToGroup(highlight);
-        highlight->setPos(0.0,0.0);   //sb setPos(center.x,center.y)?
+        highlight->setPos(0.0, 0.0);   //sb setPos(center.x, center.y)?
         highlight->setReference(viewDetail->Reference.getValue());
         highlight->setStyle((Qt::PenStyle)vp->HighlightLineStyle.getValue());
         highlight->setColor(vp->HighlightLineColor.getValue().asValue<QColor>());
@@ -946,15 +1008,15 @@ void QGIViewPart::drawHighlight(TechDraw::DrawViewDetail* viewDetail, bool b)
         Base::Vector3d center = viewDetail->AnchorPoint.getValue() * viewPart->getScale();
 
         double radius = viewDetail->Radius.getValue() * viewPart->getScale();
-        highlight->setBounds(center.x - radius, center.y + radius,center.x + radius, center.y - radius);
+        highlight->setBounds(center.x - radius, center.y + radius, center.x + radius, center.y - radius);
         highlight->setWidth(Rez::guiX(vp->IsoWidth.getValue()));
-        highlight->setFont(m_font, fontSize);
+        highlight->setFont(getFont(), fontSize);
         highlight->setZValue(ZVALUE::HIGHLIGHT);
 
         QPointF rotCenter = highlight->mapFromParent(transformOriginPoint());
         highlight->setTransformOriginPoint(rotCenter);
 
-        double rotation = viewPart->Rotation.getValue() + 
+        double rotation = viewPart->Rotation.getValue() +
                           vp->HighlightAdjust.getValue();
         highlight->setRotation(rotation);
         highlight->draw();
@@ -976,7 +1038,7 @@ void QGIViewPart::drawMatting()
     QGIMatting* mat = new QGIMatting();
     addToGroup(mat);
     mat->setRadius(Rez::guiX(radius));
-    mat->setPos(0.0,0.0);
+    mat->setPos(0.0, 0.0);
     mat->draw();
     mat->show();
 }
@@ -1123,7 +1185,7 @@ void QGIViewPart::toggleCosmeticLines(bool state)
 }
 
 //get hatchObj for face i if it exists
-TechDraw::DrawHatch* QGIViewPart::faceIsHatched(int i,std::vector<TechDraw::DrawHatch*> hatchObjs) const
+TechDraw::DrawHatch* QGIViewPart::faceIsHatched(int i, std::vector<TechDraw::DrawHatch*> hatchObjs) const
 {
     TechDraw::DrawHatch* result = nullptr;
     bool found = false;
@@ -1144,7 +1206,7 @@ TechDraw::DrawHatch* QGIViewPart::faceIsHatched(int i,std::vector<TechDraw::Draw
     return result;
 }
 
-TechDraw::DrawGeomHatch* QGIViewPart::faceIsGeomHatched(int i,std::vector<TechDraw::DrawGeomHatch*> geomObjs) const
+TechDraw::DrawGeomHatch* QGIViewPart::faceIsGeomHatched(int i, std::vector<TechDraw::DrawGeomHatch*> geomObjs) const
 {
     TechDraw::DrawGeomHatch* result = nullptr;
     bool found = false;
@@ -1166,10 +1228,10 @@ TechDraw::DrawGeomHatch* QGIViewPart::faceIsGeomHatched(int i,std::vector<TechDr
 }
 
 
-void QGIViewPart::dumpPath(const char* text,QPainterPath path)
+void QGIViewPart::dumpPath(const char* text, QPainterPath path)
 {
         QPainterPath::Element elem;
-        Base::Console().Message(">>>%s has %d elements\n",text,path.elementCount());
+        Base::Console().Message(">>>%s has %d elements\n", text, path.elementCount());
         char* typeName;
         for(int iElem = 0; iElem < path.elementCount(); iElem++) {
             elem = path.elementAt(iElem);
@@ -1182,7 +1244,7 @@ void QGIViewPart::dumpPath(const char* text,QPainterPath path)
             } else {
                 typeName = "CurveData";
             }
-            Base::Console().Message(">>>>> element %d: type:%d/%s pos(%.3f,%.3f) M:%d L:%d C:%d\n",
+            Base::Console().Message(">>>>> element %d: type:%d/%s pos(%.3f, %.3f) M:%d L:%d C:%d\n",
                                     iElem, elem.type, typeName, elem.x, elem.y, elem.isMoveTo(), elem.isLineTo(),
                                      elem.isCurveTo());
         }

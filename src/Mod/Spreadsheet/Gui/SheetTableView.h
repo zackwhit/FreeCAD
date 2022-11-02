@@ -23,11 +23,12 @@
 #ifndef SHEETTABLEVIEW_H
 #define SHEETTABLEVIEW_H
 
-#include <QTableView>
 #include <QHeaderView>
-#include <QKeyEvent>
+#include <QTableView>
+#include <QTimer>
+
 #include <Mod/Spreadsheet/App/Sheet.h>
-#include <Mod/Spreadsheet/App/Utils.h>
+
 
 namespace SpreadsheetGui {
 
@@ -73,7 +74,7 @@ public Q_SLOTS:
 
 protected Q_SLOTS:
     void commitData(QWidget *editor) override;
-    void updateCellSpan(App::CellAddress address);
+    void updateCellSpan();
     void insertRows();
     void insertRowsAfter();
     void removeRows();
@@ -102,6 +103,9 @@ protected:
 
     QMenu *contextMenu;
 
+    QAction *actionProperties;
+    QAction *actionRecompute;
+    QAction *actionConf;
     QAction *actionMerge;
     QAction *actionSplit;
     QAction *actionCopy;
@@ -110,7 +114,10 @@ protected:
     QAction *actionDel;
     QAction *actionBind;
 
+    QTimer timer;
+
     boost::signals2::scoped_connection cellSpanChangedConnection;
+    std::set<App::CellAddress> spanChanges;
 };
 
 }

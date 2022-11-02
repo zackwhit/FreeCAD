@@ -1083,7 +1083,7 @@ void Area::showShape(const TopoDS_Shape& shape, const char* name, const char* fm
             va_end(args);
             name = buf;
         }
-        Part::Feature* pcFeature = (Part::Feature*)pcDoc->addObject("Part::Feature", name);
+        Part::Feature* pcFeature = static_cast<Part::Feature*>(pcDoc->addObject("Part::Feature", name));
         pcFeature->Shape.setValue(shape);
     }
 }
@@ -3041,7 +3041,7 @@ std::list<TopoDS_Shape> Area::sortWires(const std::list<TopoDS_Shape>& shapes,
     gp_Pnt pstart, pend;
     if (_pstart)
         pstart = *_pstart;
-    bool use_bound = !has_start || _pstart == nullptr;
+    bool use_bound = !has_start || !_pstart;
 
     //Second stage, group shape by its plane, and find overall boundary
 

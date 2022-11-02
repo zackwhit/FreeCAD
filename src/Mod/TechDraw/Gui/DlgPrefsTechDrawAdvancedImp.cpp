@@ -22,12 +22,11 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #include "DlgPrefsTechDrawAdvancedImp.h"
-#include <Mod/TechDraw/Gui/ui_DlgPrefsTechDrawAdvanced.h>
-#include <Gui/PrefWidgets.h>
+#include "ui_DlgPrefsTechDrawAdvanced.h"
+
 
 using namespace TechDrawGui;
 
@@ -45,7 +44,7 @@ DlgPrefsTechDrawAdvancedImp::~DlgPrefsTechDrawAdvancedImp()
 
 void DlgPrefsTechDrawAdvancedImp::saveSettings()
 {
-    ui->cbDetectFaces->onSave(); 
+    ui->cbDetectFaces->onSave();
     ui->cbShowSectionEdges->onSave();
     ui->cbDebugSection->onSave();
     ui->cbDebugDetail->onSave();

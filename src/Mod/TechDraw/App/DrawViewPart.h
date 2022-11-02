@@ -22,14 +22,11 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _DrawViewPart_h_
-#define _DrawViewPart_h_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef DrawViewPart_h_
+#define DrawViewPart_h_
 
 #include <QFuture>
 #include <QFutureWatcher>
-#include <QObject>
 
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Wire.hxx>
@@ -37,11 +34,11 @@
 #include <App/DocumentObject.h>
 #include <App/FeaturePython.h>
 #include <App/PropertyLinks.h>
-#include <App/PropertyUnits.h>
 #include <Base/BoundBox.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
 
-#include "CosmeticExtension.h"
 #include "DrawView.h"
+#include "CosmeticExtension.h"
 
 
 class gp_Pnt;
@@ -110,7 +107,6 @@ public:
     App::PropertyInteger  IsoCount;
 
     short mustExecute() const override;
-    void onDocumentRestored() override;
     App::DocumentObjectExecReturn *execute() override;
     const char* getViewProviderName() const override {
         return "TechDrawGui::ViewProviderViewPart";
@@ -146,28 +142,34 @@ public:
     virtual Base::Vector3d projectPoint(const Base::Vector3d& pt,
                                         bool invert = true) const;
     virtual BaseGeomPtr projectEdge(const TopoDS_Edge& e) const;
+    virtual BaseGeomPtrVector projectWire(const TopoDS_Wire& inWire) const;
 
     virtual gp_Ax2 getViewAxis(const Base::Vector3d& pt,
                                const Base::Vector3d& direction,
                                const bool flip=true) const;
-    virtual gp_Ax2 getProjectionCS(Base::Vector3d pt) const;
+    virtual gp_Ax2 getProjectionCS(Base::Vector3d pt = Base::Vector3d(0.0, 0.0, 0.0)) const;
     virtual Base::Vector3d getXDirection() const;       //don't use XDirection.getValue()
     virtual Base::Vector3d getOriginalCentroid() const;
     virtual Base::Vector3d getCurrentCentroid() const;
     virtual Base::Vector3d getLegacyX(const Base::Vector3d& pt,
                                       const Base::Vector3d& axis,
                                       const bool flip = true)  const;
+    gp_Ax2 localVectorToCS(const Base::Vector3d localUnit) const;
 
 
     bool handleFaces();
+    bool newFaceFinder();
 
     bool isUnsetting() { return nowUnsetting; }
-    
+
     virtual std::vector<TopoDS_Wire> getWireForFace(int idx) const;
 
     virtual TopoDS_Shape getSourceShape() const;
     virtual TopoDS_Shape getSourceShapeFused() const;
     virtual std::vector<TopoDS_Shape> getSourceShape2d() const;
+
+    TopoDS_Shape getShape() const;
+    double getSizeAlongVector(Base::Vector3d alignmentVector);
 
     virtual void postHlrTasks(void);
 
@@ -226,7 +228,7 @@ protected:
     void onChanged(const App::Property* prop) override;
     void unsetupObject() override;
 
-    virtual TechDraw::GeometryObject*  buildGeometryObject(TopoDS_Shape& shape, gp_Ax2& viewAxis);
+    virtual TechDraw::GeometryObject*  buildGeometryObject(TopoDS_Shape& shape, const gp_Ax2& viewAxis);
     virtual TechDraw::GeometryObject*  makeGeometryForShape(TopoDS_Shape& shape);   //const??
     void partExec(TopoDS_Shape& shape);
     virtual void addShapes2d(void);
@@ -273,4 +275,4 @@ using DrawViewPartPython = App::FeaturePythonT<DrawViewPart>;
 
 } //namespace TechDraw
 
-#endif  // #ifndef _DrawViewPart_h_
+#endif  // #ifndef DrawViewPart_h_

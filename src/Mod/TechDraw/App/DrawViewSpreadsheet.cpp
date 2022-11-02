@@ -21,35 +21,25 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# include <sstream>
+#include <iomanip>
+#include <sstream>
+#include <boost/regex.hpp>
 #endif
 
-#include <iomanip>
-
-#include <boost/regex.hpp>
-
-#include <App/Application.h>
 #include <App/Property.h>
-#include <App/PropertyStandard.h>
-#include <App/PropertyUnits.h>
 #include <Base/Console.h>
-#include <Base/Exception.h>
-#include <Base/FileInfo.h>
-#include <Base/Parameter.h>
-
-#include "Preferences.h"
-#include "DrawViewSpreadsheet.h"
-
 #include <Mod/Spreadsheet/App/Cell.h>
 #include <Mod/Spreadsheet/App/Sheet.h>
 
-using namespace TechDraw;
-using namespace std;
+#include "DrawUtil.h"
+#include "Preferences.h"
 
+#include "DrawViewSpreadsheet.h"
+
+using namespace TechDraw;
 
 //===========================================================================
 // DrawViewSpreadsheet
@@ -61,17 +51,17 @@ DrawViewSpreadsheet::DrawViewSpreadsheet()
 {
     static const char *vgroup = "Spreadsheet";
 
-    ADD_PROPERTY_TYPE(Source ,(nullptr),vgroup,App::Prop_None,"Spreadsheet to view");
+    ADD_PROPERTY_TYPE(Source ,(nullptr), vgroup, App::Prop_None, "Spreadsheet to view");
     Source.setScope(App::LinkScope::Global);
-    ADD_PROPERTY_TYPE(CellStart ,("A1"),vgroup,App::Prop_None,"The top left cell of the range to display");
-    ADD_PROPERTY_TYPE(CellEnd ,("B2"),vgroup,App::Prop_None,"The bottom right cell of the range to display");
+    ADD_PROPERTY_TYPE(CellStart ,("A1"), vgroup, App::Prop_None, "The top left cell of the range to display");
+    ADD_PROPERTY_TYPE(CellEnd ,("B2"), vgroup, App::Prop_None, "The bottom right cell of the range to display");
     ADD_PROPERTY_TYPE(Font ,(Preferences::labelFont().c_str()),
-                                                         vgroup,App::Prop_None,"The name of the font to use");
-    ADD_PROPERTY_TYPE(TextColor,(0.0f,0.0f,0.0f),vgroup,App::Prop_None,"The default color of the text and lines");
-    ADD_PROPERTY_TYPE(TextSize,(12.0),vgroup,App::Prop_None,"The size of the text");
-    ADD_PROPERTY_TYPE(LineWidth,(0.35),vgroup,App::Prop_None,"The thickness of the cell lines");
+                                                         vgroup, App::Prop_None, "The name of the font to use");
+    ADD_PROPERTY_TYPE(TextColor, (0.0f, 0.0f, 0.0f), vgroup, App::Prop_None, "The default color of the text and lines");
+    ADD_PROPERTY_TYPE(TextSize, (12.0), vgroup, App::Prop_None, "The size of the text");
+    ADD_PROPERTY_TYPE(LineWidth, (0.35), vgroup, App::Prop_None, "The thickness of the cell lines");
 
-    EditableTexts.setStatus(App::Property::Hidden,true);
+    EditableTexts.setStatus(App::Property::Hidden, true);
 
 }
 
@@ -161,10 +151,10 @@ std::string DrawViewSpreadsheet::getSheetImage()
     std::string scellstart = CellStart.getValue();
     std::string scellend = CellEnd.getValue();
 
-    //s/s columns are A,B,C, ... ZX,ZY,ZZ 
+    //s/s columns are A, B,C, ... ZX, ZY, ZZ
     //lower case characters are not valid
-    transform(scellstart.begin(), scellstart.end(), scellstart.begin(), ::toupper); 
-    transform(scellend.begin(), scellend.end(), scellend.begin(), ::toupper); 
+    transform(scellstart.begin(), scellstart.end(), scellstart.begin(), ::toupper);
+    transform(scellend.begin(), scellend.end(), scellend.begin(), ::toupper);
 
     std::string colPart;
     std::string rowPart;
@@ -174,7 +164,8 @@ std::string DrawViewSpreadsheet::getSheetImage()
     std::string sColStart, sColEnd;
     if (boost::regex_search(scellstart, what, re)) {
         if (what.size() < 3) {
-            Base::Console().Error("%s - start cell (%s) is invalid\n",getNameInDocument(),CellStart.getValue());
+            Base::Console().Error("%s - start cell (%s) is invalid\n", getNameInDocument(),
+                                  CellStart.getValue());
             return std::string();
         }
 
@@ -193,7 +184,7 @@ std::string DrawViewSpreadsheet::getSheetImage()
 
     if (boost::regex_search(scellend, what, re)) {
         if (what.size() < 3) {
-            Base::Console().Error("%s - end cell (%s) is invalid\n",getNameInDocument(),CellEnd.getValue());
+            Base::Console().Error("%s - end cell (%s) is invalid\n", getNameInDocument(), CellEnd.getValue());
         } else {
             colPart = what[1];
             sColEnd = colPart;
@@ -220,7 +211,7 @@ std::string DrawViewSpreadsheet::getSheetImage()
     }
 
     //validate range end column in sheet's available columns
-    int iAvailColEnd = colInList(availcolumns,sColEnd);
+    int iAvailColEnd = colInList(availcolumns, sColEnd);
     if (iAvailColEnd < 0) {
         Base::Console().Error("DVS - %s - end Column (%s) is invalid\n",
                               getNameInDocument(), sColEnd.c_str());
@@ -230,7 +221,7 @@ std::string DrawViewSpreadsheet::getSheetImage()
     //check for logical range
     if ( (iAvailColStart > iAvailColEnd) ||
          (iRowStart > iRowEnd) ) {
-        Base::Console().Error("%s - cell range is illogical\n",getNameInDocument());
+        Base::Console().Error("%s - cell range is illogical\n", getNameInDocument());
         return std::string();
     }
 
@@ -242,20 +233,19 @@ std::string DrawViewSpreadsheet::getSheetImage()
     for (; iCol <= iAvailColEnd; iCol++) {
         validColNames.push_back(availcolumns.at(iCol));
     }
-    
+
     int iRow = iRowStart;
     for ( ; iRow <= iRowEnd ; iRow++) {
         validRowNumbers.push_back(iRow);
     }
 
-    // create the Svg code
-
+    // create the SVG code
     std::stringstream result;
     result << getSVGHead();
 
     std::string ViewName = Label.getValue();
     App::Color c = TextColor.getValue();
-    result  << "<g id=\"" << ViewName << "\">" << endl;
+    result << "<g id=\"" << ViewName << "\">" << std::endl;
 
     // fill the cells
     float rowoffset = 0.0;
@@ -266,10 +256,12 @@ std::string DrawViewSpreadsheet::getSheetImage()
     Spreadsheet::Sheet* sheet = static_cast<Spreadsheet::Sheet*>(link);
     std::vector<std::string> skiplist;
 
-    for (std::vector<std::string>::const_iterator col = validColNames.begin(); col != validColNames.end(); ++col) {
+    for (std::vector<std::string>::const_iterator col = validColNames.begin();
+         col != validColNames.end(); ++col) {
         // create a group for each column
-        result << "  <g id=\"" << ViewName << "_col" << (*col) << "\">" << endl;
-        for (std::vector<int>::const_iterator row = validRowNumbers.begin(); row != validRowNumbers.end(); ++row) {
+        result << "  <g id=\"" << ViewName << "_col" << (*col) << "\">" << std::endl;
+        for (std::vector<int>::const_iterator row = validRowNumbers.begin();
+             row != validRowNumbers.end(); ++row) {
             // get cell size
             std::stringstream srow;
             srow << (*row);
@@ -287,9 +279,13 @@ std::string DrawViewSpreadsheet::getSheetImage()
                     prop->isDerivedFrom(App::PropertyFloat::getClassTypeId()) ||
                     prop->isDerivedFrom(App::PropertyInteger::getClassTypeId())
                 ) {
-                    field << cell->getFormattedQuantity();
+                    std::string temp = cell->getFormattedQuantity();    //writable
+                    DrawUtil::encodeXmlSpecialChars(temp);
+                    field << temp;
                 } else if (prop->isDerivedFrom(App::PropertyString::getClassTypeId())) {
-                    field << static_cast<App::PropertyString*>(prop)->getValue();
+                    std::string temp = static_cast<App::PropertyString*>(prop)->getValue();
+                    DrawUtil::encodeXmlSpecialChars(temp);
+                    field << temp;
                 } else {
                     Base::Console().Error("DVSS: Unknown property type\n");
                 }
@@ -301,7 +297,7 @@ std::string DrawViewSpreadsheet::getSheetImage()
             std::string fcolor = c.asHexString();
             std::string textstyle;
             if (cell) {
-                App::Color f,b;
+                App::Color f, b;
                 std::set<std::string> st;
                 int colspan, rowspan;
                 if (cell->getBackground(b)) {
@@ -320,10 +316,10 @@ std::string DrawViewSpreadsheet::getSheetImage()
                             textstyle = textstyle + "text-decoration: underline; ";
                     }
                 }
-                if (cell->getSpans(rowspan,colspan)) {
+                if (cell->getSpans(rowspan, colspan)) {
                     for (int i=0; i<colspan; ++i) {
                         for (int j=0; j<rowspan; ++j) {
-                            App::CellAddress nextcell(address.row()+j,address.col()+i);
+                            App::CellAddress nextcell(address.row()+j, address.col()+i);
                             if (i > 0)
                                 cellwidth = cellwidth + sheet->getColumnWidth(nextcell.col());
                             if (j > 0)
@@ -337,31 +333,39 @@ std::string DrawViewSpreadsheet::getSheetImage()
             }
             // skip cell if found in skiplist
             if (std::find(skiplist.begin(), skiplist.end(), address.toString()) == skiplist.end()) {
-                result << "    <rect x=\"" << coloffset << "\" y=\"" << rowoffset << "\" width=\"" << cellwidth
-                       << "\" height=\"" << cellheight << "\" style=\"fill:" << bcolor << ";stroke-width:"
-                       << LineWidth.getValue()/getScale() << ";stroke:" << c.asHexString() << ";\" />" << endl;
+                result << "    <rect x=\"" << coloffset << "\" y=\"" << rowoffset << "\" width=\""
+                       << cellwidth << "\" height=\"" << cellheight << "\" style=\"fill:" << bcolor
+                       << ";stroke-width:" << LineWidth.getValue() / getScale()
+                       << ";stroke:" << c.asHexString() << ";\" />" << std::endl;
                 if (alignment & Spreadsheet::Cell::ALIGNMENT_LEFT)
-                    result << "    <text style=\"" << textstyle << "\" x=\"" << coloffset + TextSize.getValue()/2 << "\" y=\"" << rowoffset + 0.75 * cellheight << "\" font-family=\"" ;
+                    result << "    <text style=\"" << textstyle << "\" x=\""
+                           << coloffset + TextSize.getValue() / 2 << "\" y=\""
+                           << rowoffset + 0.75 * cellheight << "\" font-family=\"";
                 if (alignment & Spreadsheet::Cell::ALIGNMENT_HCENTER)
-                    result << "    <text text-anchor=\"middle\" style=\"" << textstyle << "\" x=\"" << coloffset + cellwidth/2 << "\" y=\"" << rowoffset + 0.75 * cellheight << "\" font-family=\"" ;
+                    result << "    <text text-anchor=\"middle\" style=\"" << textstyle << "\" x=\""
+                           << coloffset + cellwidth / 2 << "\" y=\""
+                           << rowoffset + 0.75 * cellheight << "\" font-family=\"";
                 if (alignment & Spreadsheet::Cell::ALIGNMENT_RIGHT)
-                    result << "    <text text-anchor=\"end\" style=\"" << textstyle << "\" x=\"" << coloffset + (cellwidth - TextSize.getValue()/2) << "\" y=\"" << rowoffset + 0.75 * cellheight << "\" font-family=\"" ;
-                if ((alignment & Spreadsheet::Cell::ALIGNMENT_LEFT) ||
-                    (alignment & Spreadsheet::Cell::ALIGNMENT_HCENTER) ||
-                    (alignment & Spreadsheet::Cell::ALIGNMENT_RIGHT)) {
-                    result << Font.getValue() << "\"" << " font-size=\"" << TextSize.getValue() << "\""
-                           << " fill=\"" << fcolor << "\">" << celltext << "</text>" << endl;
+                    result << "    <text text-anchor=\"end\" style=\"" << textstyle << "\" x=\""
+                           << coloffset + (cellwidth - TextSize.getValue() / 2) << "\" y=\""
+                           << rowoffset + 0.75 * cellheight << "\" font-family=\"";
+                if ((alignment & Spreadsheet::Cell::ALIGNMENT_LEFT)
+                    || (alignment & Spreadsheet::Cell::ALIGNMENT_HCENTER)
+                    || (alignment & Spreadsheet::Cell::ALIGNMENT_RIGHT)) {
+                    result << Font.getValue() << "\""
+                           << " font-size=\"" << TextSize.getValue() << "\""
+                           << " fill=\"" << fcolor << "\">" << celltext << "</text>" << std::endl;
                 }
             }
             rowoffset = rowoffset + sheet->getRowHeight(address.row());
         }
-        result << "  </g>" << endl;
+        result << "  </g>" << std::endl;
         rowoffset = 0.0;
         coloffset = coloffset + cellwidth;
     }
 
     // close the containing group
-    result << "</g>" << endl;
+    result << "</g>" << std::endl;
 
     result << getSVGTail();
 

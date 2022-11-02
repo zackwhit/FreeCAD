@@ -24,6 +24,7 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+# include <QRegularExpression>
 #endif
 
 #include "TaskDlgPathCompound.h"
@@ -38,9 +39,6 @@
 #include <Gui/Document.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
-
-#include <Mod/Path/App/Tooltable.h>
-
 
 using namespace PathGui;
 using namespace Gui;
@@ -86,7 +84,7 @@ std::vector<std::string> TaskWidgetPathCompound::getList() const {
         QListWidgetItem* item = ui->PathsList->item(i);
         QString name = item->text();
         QStringList result;
-        result = name.split(QRegExp(QString::fromLatin1("\\s+")));
+        result = name.split(QRegularExpression(QString::fromLatin1("\\s+")));
         std::cout << result[0].toStdString() << std::endl;
         names.push_back(result[0].toStdString());
     }

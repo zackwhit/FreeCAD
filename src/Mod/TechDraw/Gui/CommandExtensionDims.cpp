@@ -24,9 +24,8 @@
 #ifndef _PreComp_
 # include <QApplication>
 # include <QMessageBox>
-# include <string>
 # include <sstream>
-#endif  //#ifndef _PreComp_
+#endif
 
 # include <App/Document.h>
 # include <App/DocumentObject.h>
@@ -45,8 +44,8 @@
 # include <Mod/TechDraw/App/DrawViewBalloon.h>
 # include <Mod/TechDraw/App/DrawViewDimension.h>
 # include <Mod/TechDraw/App/DrawPage.h>
-# include <Mod/TechDraw/App/DrawViewPart.h>
 # include <Mod/TechDraw/App/DrawUtil.h>
+# include <Mod/TechDraw/App/DrawViewPart.h>
 # include <Mod/TechDraw/App/Preferences.h>
 
 #include "DrawGuiUtil.h"
@@ -56,7 +55,6 @@
 
 using namespace TechDrawGui;
 using namespace TechDraw;
-using namespace std;
 
 namespace TechDrawGui {
     //internal structures and sort functions
@@ -557,7 +555,7 @@ void execPosHorizChainDimension(Gui::Command* cmd) {
     if (!_checkSelection(cmd, selection, "TechDraw PosHorizChainDimension")) {
         return;
     }
-    
+
     Gui::Command::openCommand(QT_TRANSLATE_NOOP("Command", "Pos Horiz Chain Dim"));
     std::vector<TechDraw::DrawViewDimension*> validDimension;
     validDimension = _getDimensions(selection, "DistanceX");
@@ -878,7 +876,7 @@ void execCascadeHorizDimension(Gui::Command* cmd) {
     }
     float yMaster = validDimension[0]->Y.getValue();
     float dimDistance = activeDimAttributes.getCascadeSpacing();
-    if (signbit(yMaster))
+    if (std::signbit(yMaster))
         dimDistance = -dimDistance;
     for (auto dim : validDimension) {
         dim->Y.setValue(yMaster);
@@ -944,7 +942,7 @@ void execCascadeVertDimension(Gui::Command* cmd) {
     }
     float xMaster = validDimension[0]->X.getValue();
     float dimDistance = activeDimAttributes.getCascadeSpacing();
-    if (signbit(xMaster))
+    if (std::signbit(xMaster))
         dimDistance = -dimDistance;
     double fontSize = Preferences::dimFontSizeMM();
     for (auto dim : validDimension) {
@@ -1544,7 +1542,7 @@ void execCreateHorizCoordDimension(Gui::Command* cmd) {
         }
         float dimDistance = activeDimAttributes.getCascadeSpacing();
         float yMaster = allVertexes[0].point.y - dimDistance;
-        if (signbit(yMaster))
+        if (std::signbit(yMaster))
             dimDistance = -dimDistance;
         for (long unsigned int n = 0; n < allVertexes.size() - 1; n++) {
             TechDraw::DrawViewDimension* dim;
@@ -1615,7 +1613,7 @@ void execCreateVertCoordDimension(Gui::Command* cmd) {
         }
         float dimDistance = activeDimAttributes.getCascadeSpacing();
         float xMaster = allVertexes[0].point.x + dimDistance;
-        if (signbit(xMaster))
+        if (std::signbit(xMaster))
             dimDistance = -dimDistance;
         double fontSize = Preferences::dimFontSizeMM();
         for (long unsigned int n = 0; n < allVertexes.size() - 1; n++) {
@@ -1904,7 +1902,7 @@ void execCreateHorizChamferDimension(Gui::Command* cmd) {
         TechDraw::DrawViewDimension* dim;
         dim = _createLinDimension(cmd, objFeat, allVertexes[0].name, allVertexes[1].name, "DistanceX");
         float yMax = std::max(abs(allVertexes[0].point.y), abs(allVertexes[1].point.y)) + 7.0;
-        if (signbit(allVertexes[0].point.y))
+        if (std::signbit(allVertexes[0].point.y))
             yMax = -yMax;
         TechDraw::pointPair pp = dim->getLinearPoints();
         Base::Vector3d mid = (pp.first + pp.second) / 2.0;
@@ -1971,7 +1969,7 @@ void execCreateVertChamferDimension(Gui::Command* cmd) {
         TechDraw::DrawViewDimension* dim;
         dim = _createLinDimension(cmd, objFeat, allVertexes[0].name, allVertexes[1].name, "DistanceY");
         float xMax = std::max(abs(allVertexes[0].point.x), abs(allVertexes[1].point.x)) + 7.0;
-        if (signbit(allVertexes[0].point.x))
+        if (std::signbit(allVertexes[0].point.x))
             xMax = -xMax;
         TechDraw::pointPair pp = dim->getLinearPoints();
         Base::Vector3d mid = (pp.first + pp.second) / 2.0;
@@ -2287,7 +2285,7 @@ namespace TechDrawGui {
         objs.push_back(objFeat);
         subs.push_back(startVertex);
         subs.push_back(endVertex);
-        cmd->doCommand(cmd->Doc, "App.activeDocument().addObject('TechDraw::DrawViewDimension','%s')", FeatName.c_str());
+        cmd->doCommand(cmd->Doc, "App.activeDocument().addObject('TechDraw::DrawViewDimension', '%s')", FeatName.c_str());
         cmd->doCommand(cmd->Doc, "App.activeDocument().%s.Type = '%s'", FeatName.c_str(), dimType.c_str());
         dim = dynamic_cast<TechDraw::DrawViewDimension*>(cmd->getDocument()->getObject(FeatName.c_str()));
         if (!dim)

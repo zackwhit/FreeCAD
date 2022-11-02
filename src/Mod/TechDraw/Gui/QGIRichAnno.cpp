@@ -37,7 +37,8 @@
 #include <QPainterPath>
 #include <QPaintDevice>
 #include <QSvgGenerator>
-#include <QRegExp>
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
 #include <QTextDocument>
 #include <QTextDocumentFragment>
 #include <QTextFrame>
@@ -95,7 +96,7 @@ QGIRichAnno::QGIRichAnno() :
     setFlag(QGraphicsItem::ItemIsSelectable, true);
     setFlag(QGraphicsItem::ItemIsMovable, true);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
-    setFlag(QGraphicsItem::ItemSendsGeometryChanges,true);
+    setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
 
     m_text = new QGCustomText();
     m_text->setTextInteractionFlags(Qt::NoTextInteraction);
@@ -107,7 +108,7 @@ QGIRichAnno::QGIRichAnno() :
     addToGroup(m_rect);
     m_rect->setZValue(ZVALUE::DIMENSION - 1);
     m_rect->centerAt(0.0, 0.0);
-    
+
     setZValue(ZVALUE::DIMENSION);
 
 }
@@ -157,7 +158,7 @@ void QGIRichAnno::drawBorder()
 
 void QGIRichAnno::draw()
 {
-//    Base::Console().Log("QGIRA::draw() - %s - parent: %X\n",getFeature()->getNameInDocument(), parentItem());
+//    Base::Console().Log("QGIRA::draw() - %s - parent: %X\n", getFeature()->getNameInDocument(), parentItem());
     if (!isVisible())
 //        Base::Console().Message("QGIRA::draw - not visible\n");
         return;
@@ -180,32 +181,33 @@ void QGIRichAnno::draw()
 
 void QGIRichAnno::setTextItem()
 {
-//    Base::Console().Message("QGIRA::setTextItem() - %s\n",getViewName());
+//    Base::Console().Message("QGIRA::setTextItem() - %s\n", getViewName());
     TechDraw::DrawRichAnno* annoFeat = getFeature();
     QString inHtml = QString::fromUtf8(annoFeat->AnnoText.getValue());
 
-    //don't do this multiplication if exporting to SVG as other apps interpret 
+    //don't do this multiplication if exporting to SVG as other apps interpret
     //font sizes differently from QGraphicsTextItem (?)
     if (!getExporting()) {
-        //convert point font sizes to (Rez,mm) font sizes
-        QRegExp rxFontSize(QString::fromUtf8("font-size:([0-9]*)pt;"));
+        //convert point font sizes to (Rez, mm) font sizes
+        QRegularExpression rxFontSize(QString::fromUtf8("font-size:([0-9]*)pt;"));
+        QRegularExpressionMatch match;
         double mmPerPoint = 0.353;
         double sizeConvert = Rez::getRezFactor() * mmPerPoint;
         int pos = 0;
         QStringList findList;
         QStringList replList;
-        while ((pos = rxFontSize.indexIn(inHtml, pos)) != -1) {
-            QString found = rxFontSize.cap(0);
+        while ((pos = inHtml.indexOf(rxFontSize, pos, &match)) != -1) {
+            QString found = match.captured(0);
             findList << found;
-            QString qsOldSize = rxFontSize.cap(1); 
+            QString qsOldSize = match.captured(1);
 
             QString repl = found;
             double newSize = qsOldSize.toDouble();
             newSize = newSize * sizeConvert;
             QString qsNewSize = QString::number(newSize, 'f', 2);
-            repl.replace(qsOldSize,qsNewSize);
+            repl.replace(qsOldSize, qsNewSize);
             replList << repl;
-            pos += rxFontSize.matchedLength();
+            pos += match.capturedLength();
         }
         QString outHtml = inHtml;
         int iRepl = 0;
@@ -220,7 +222,7 @@ void QGIRichAnno::setTextItem()
 //        m_text->update();
 
         if (annoFeat->ShowFrame.getValue()) {
-            QRectF r = m_text->boundingRect().adjusted(1,1,-1,-1);
+            QRectF r = m_text->boundingRect().adjusted(1, 1,-1, -1);
             m_rect->setPen(rectPen());
             m_rect->setBrush(Qt::NoBrush);
             m_rect->setRect(r);
@@ -273,15 +275,15 @@ void QGIRichAnno::setLineSpacing(int lineSpacing)
 
 TechDraw::DrawRichAnno* QGIRichAnno::getFeature()
 {
-    TechDraw::DrawRichAnno* result = 
+    TechDraw::DrawRichAnno* result =
          static_cast<TechDraw::DrawRichAnno*>(getViewObject());
     return result;
 }
 
 QRectF QGIRichAnno::boundingRect() const
 {
-    QRectF rect = mapFromItem(m_text,m_text->boundingRect()).boundingRect();
-    return rect.adjusted(-10.,-10.,10.,10.);
+    QRectF rect = mapFromItem(m_text, m_text->boundingRect()).boundingRect();
+    return rect.adjusted(-10., -10., 10., 10.);
 }
 
 void QGIRichAnno::paint ( QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget) {
@@ -304,9 +306,9 @@ QPen QGIRichAnno::rectPen() const
         return pen;
 
     double rectWeight = Rez::guiX(vp->LineWidth.getValue());
-    Qt::PenStyle rectStyle = (Qt::PenStyle) vp->LineStyle.getValue();
+    Qt::PenStyle rectStyle = static_cast<Qt::PenStyle>(vp->LineStyle.getValue());
     App::Color temp = vp->LineColor.getValue();
-    QColor rectColor = temp.asValue<QColor>(); 
+    QColor rectColor = temp.asValue<QColor>();
 
     pen = QPen(rectStyle);
     pen.setWidthF(rectWeight);
@@ -326,7 +328,7 @@ double QGIRichAnno::prefPointSize()
     //this conversion is only approximate. the factor changes for different fonts.
 //    double mmToPts = 2.83;  //theoretical value
     double mmToPts = 2.00;  //practical value. seems to be reasonable for common fonts.
-    
+
     double ptsSize = round(fontSize * mmToPts);
     return ptsSize;
 }

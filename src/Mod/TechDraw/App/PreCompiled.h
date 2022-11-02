@@ -20,30 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef TECHDRAW_PRECOMPILED_H
 #define TECHDRAW_PRECOMPILED_H
 
 #include <FCConfig.h>
-
-// Exporting of App classes
-#ifdef FC_OS_WIN32
-# define TechDrawExport  __declspec(dllexport)
-# define DrawingExport   __declspec(dllexport)
-# define PartExport      __declspec(dllimport)
-# define MeasureExport   __declspec(dllimport)
-# define MeshExport      __declspec(dllimport)
-# define SpreadsheetExport     __declspec(dllimport)
-# define ImportExport    __declspec(dllimport)
-#else // for Linux
-# define TechDrawExport
-# define DrawingExport
-# define MeasureExport
-# define PartExport
-# define MeshExport
-# define SpreadsheetExport
-# define ImportExport
-#endif
 
 #ifdef _MSC_VER
 # pragma warning( disable : 4275 )
@@ -52,17 +32,23 @@
 #ifdef _PreComp_
 
 // standard
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <cstdio>
-#include <cassert>
-#include <string>
-#include <map>
-#include <vector>
-#include <set>
+#include <algorithm>
 #include <bitset>
+#include <cassert>
+#include <cstdio>
+#include <chrono>
 
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
+
+// boost
 #include <boost/graph/boyer_myrvold_planar_test.hpp>
 #include <boost/graph/is_kuratowski_subgraph.hpp>
 #include <boost/regex.hpp>
@@ -70,14 +56,19 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+// Qt
+#include <QDomDocument>
+#include "QDomNodeModel.h"
 #include <QFile>
+#include <QLocale>
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
+#include <QtConcurrentRun>
+#include <QXmlQuery>
+#include <QXmlResultItems>
 
-// OpenCasCade =====================================================================================
+// OpenCasCade
 #include <Mod/Part/App/OpenCascadeAll.h>
-#include <gce_MakeCirc.hxx>
-#include <HLRBRep_HLRToShape.hxx>
-#include <HLRBRep_PolyAlgo.hxx>
-#include <HLRBRep_PolyHLRToShape.hxx>
 
 #endif // _PreComp_
 #endif

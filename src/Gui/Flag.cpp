@@ -134,7 +134,7 @@ void Flag::mouseMoveEvent(QMouseEvent *e)
     if (e->buttons() & Qt::LeftButton) {
         move(e->globalPos() - dragPosition);
         e->accept();
-        View3DInventorViewer* viewer = dynamic_cast<View3DInventorViewer*>(parentWidget());
+        auto viewer = dynamic_cast<View3DInventorViewer*>(parentWidget());
         if (viewer)
             viewer->getSoRenderManager()->scheduleRedraw();
     }
@@ -183,7 +183,7 @@ QSize Flag::sizeHint() const
 FlagLayout::FlagLayout(QWidget *parent, int margin, int spacing)
     : QLayout(parent)
 {
-    setMargin(margin);
+    setContentsMargins(margin, margin, margin, margin);
     setSpacing(spacing);
 }
 

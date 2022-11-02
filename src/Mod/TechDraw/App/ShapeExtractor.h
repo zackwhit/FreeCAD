@@ -20,10 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _ShapeExtractor_h_
-#define _ShapeExtractor_h_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef ShapeExtractor_h_
+#define ShapeExtractor_h_
 
 #include <TopoDS_Shape.hxx>
 
@@ -31,6 +29,8 @@
 #include <App/Link.h>
 #include <Base/Type.h>
 #include <Base/Vector3D.h>
+
+#include <Mod/TechDraw/TechDrawGlobal.h>
 
 
 namespace TechDraw
@@ -62,4 +62,4 @@ private:
 
 } //namespace TechDraw
 
-#endif  // #ifndef _ShapeExtractor_h_
+#endif  // #ifndef ShapeExtractor_h_

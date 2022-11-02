@@ -22,19 +22,14 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
-#include <App/Application.h>
-
-#include <Base/Parameter.h>
-#include <Base/Console.h>
 #include <Base/Tools.h>
 
-#include "DrawGuiUtil.h"
-#include "PreferencesGui.h"
 #include "DlgPrefsTechDrawDimensionsImp.h"
 #include "ui_DlgPrefsTechDrawDimensions.h"
+#include "DrawGuiUtil.h"
+#include "PreferencesGui.h"
 
 
 using namespace TechDrawGui;
@@ -59,7 +54,7 @@ DlgPrefsTechDrawDimensionsImp::~DlgPrefsTechDrawDimensionsImp()
 
 void DlgPrefsTechDrawDimensionsImp::saveSettings()
 {
-    ui->pcbStandardAndStyle->onSave(); 
+    ui->pcbStandardAndStyle->onSave();
     ui->cbGlobalDecimals->onSave();
     ui->cbShowUnits->onSave();
     ui->sbAltDecimals->onSave();

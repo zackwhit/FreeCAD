@@ -114,8 +114,9 @@ class Addon:
             self.blockers = []  # A list of Addons
             self.replaces = []  # A list of Addons
             self.internal_workbenches: Set[str] = set()  # Required internal workbenches
-            self.python_required: Set[str] = set()
+            self.python_requires: Set[str] = set()
             self.python_optional: Set[str] = set()
+            self.python_min_version = {"major": 3, "minor": 0}
 
     class ResolutionFailed(RuntimeError):
         """An exception type for dependency resolution failure."""
@@ -168,13 +169,14 @@ class Addon:
         self.installed_version = None
 
         # Each repo is also a node in a directed dependency graph (referenced by name so
-        # they cen be serialized):
+        # they can be serialized):
         self.requires: Set[str] = set()
         self.blocks: Set[str] = set()
 
-        # And maintains a list of required and optional Python dependencies from metadata.txt
+        # And maintains a list of required and optional Python dependencies
         self.python_requires: Set[str] = set()
         self.python_optional: Set[str] = set()
+        self.python_min_version = {"major": 3, "minor": 0}
 
     def __str__(self) -> str:
         result = f"FreeCAD {self.repo_type}\n"
@@ -333,12 +335,46 @@ class Addon:
         if not self.version_is_ok(metadata):
             return
 
+        if metadata.PythonMin != "0.0.0":
+            split_version_string = metadata.PythonMin.split(".")
+            if len(split_version_string) >= 2:
+                try:
+                    self.python_min_version["major"] = int(split_version_string[0])
+                    self.python_min_version["minor"] = int(split_version_string[1])
+                    FreeCAD.Console.PrintLog(
+                        f"Package {self.name}: Requires Python {split_version_string[0]}.{split_version_string[1]} or greater\n"
+                    )
+                except ValueError:
+                    FreeCAD.Console.PrintWarning(
+                        f"Package {self.name}: Invalid Python version requirement specified\n"
+                    )
+
         for dep in metadata.Depend:
-            # Simple version for now: eventually support all of the version params...
-            self.requires.add(dep["package"])
-            FreeCAD.Console.PrintLog(
-                f"Package {self.name}: Adding dependency on {dep['package']}\n"
-            )
+            if "type" in dep:
+                if dep["type"] == "internal":
+                    if dep["package"] in INTERNAL_WORKBENCHES:
+                        self.requires.add(dep["package"])
+                    else:
+                        FreeCAD.Console.PrintWarning(
+                            translate(
+                                "AddonsInstaller",
+                                "{}: Unrecognized internal workbench '{}'",
+                            ).format(self.name, dep["package"])
+                        )
+                elif dep["type"] == "addon":
+                    self.requires.add(dep["package"])
+                elif dep["type"] == "python":
+                    if "optional" in dep and dep["optional"]:
+                        self.python_optional.add(dep["package"])
+                    else:
+                        self.python_requires.add(dep["package"])
+                else:
+                    # Automatic resolution happens later, once we have a complete list of Addons
+                    self.requires.add(dep["package"])
+            else:
+                # Automatic resolution happens later, once we have a complete list of Addons
+                self.requires.add(dep["package"])
+
         for dep in metadata.Conflict:
             self.blocks.add(dep["package"])
 
@@ -476,8 +512,19 @@ class Addon:
         information that may be needed.
         """
 
-        deps.python_required |= self.python_requires
+        deps.python_requires |= self.python_requires
         deps.python_optional |= self.python_optional
+
+        deps.python_min_version["major"] = max(
+            deps.python_min_version["major"], self.python_min_version["major"]
+        )
+        if deps.python_min_version["major"] == 3:
+            deps.python_min_version["minor"] = max(
+                deps.python_min_version["minor"], self.python_min_version["minor"]
+            )
+        else:
+            FreeCAD.Console.PrintWarning("Unrecognized Python version information")
+
         for dep in self.requires:
             if dep in all_repos:
                 if not dep in deps.required_external_addons:
@@ -496,7 +543,7 @@ class Addon:
                     deps.internal_workbenches.add(INTERNAL_WORKBENCHES[real_name])
                 else:
                     # Assume it's a Python requirement of some kind:
-                    deps.python_required.add(dep)
+                    deps.python_requires.add(dep)
 
         for dep in self.blocks:
             if dep in all_repos:
@@ -521,7 +568,7 @@ class Addon:
     def disable(self):
         """Disable this addon from loading when FreeCAD starts up by creating a stopfile"""
 
-        stopfile = os.path.join(mod_directory, self.name, "ADDON_DISABLED")
+        stopfile = os.path.join(self.mod_directory, self.name, "ADDON_DISABLED")
         with open(stopfile, "w", encoding="utf-8") as f:
             f.write(
                 "The existence of this file prevents FreeCAD from loading this Addon. To re-enable, delete the file."

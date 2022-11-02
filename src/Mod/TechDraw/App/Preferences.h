@@ -20,14 +20,13 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _Preferences_h_
-#define _Preferences_h_
+#ifndef Preferences_h_
+#define Preferences_h_
 
-#include <App/Material.h>
+#include <string>
 
 #include <Mod/TechDraw/TechDrawGlobal.h>
 
-#include <string>
 
 class QString;
 
@@ -53,7 +52,8 @@ static App::Color  selectColor();
 static App::Color  preselectColor();
 static App::Color  vertexColor();
 static double      vertexScale();
-
+static int         scaleType();
+static double      scale();
 static bool        useGlobalDecimals();
 static bool        keepPagesUpToDate();
 

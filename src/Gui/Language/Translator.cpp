@@ -146,6 +146,7 @@ Translator::Translator()
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Finnish"              )] = "fi";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("French"               )] = "fr";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Galician"             )] = "gl";
+    d->mapLanguageTopLevelDomain[QT_TR_NOOP("Georgian"             )] = "ka";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("German"               )] = "de";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Greek"                )] = "el";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Hungarian"            )] = "hu";
@@ -161,6 +162,7 @@ Translator::Translator()
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Portuguese"           )] = "pt-PT";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Romanian"             )] = "ro";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Russian"              )] = "ru";
+    d->mapLanguageTopLevelDomain[QT_TR_NOOP("Serbian"              )] = "sr";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Slovak"               )] = "sk";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Slovenian"            )] = "sl";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Spanish"              )] = "es-ES";
@@ -170,7 +172,6 @@ Translator::Translator()
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Ukrainian"            )] = "uk";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Valencian"            )] = "val-ES";
     d->mapLanguageTopLevelDomain[QT_TR_NOOP("Vietnamese"           )] = "vi";
-    d->mapLanguageTopLevelDomain[QT_TR_NOOP("Georgian")] = "ka";
 
     auto entries = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General")->
         GetASCII("AdditionalLanguageDomainEntries", "");
@@ -303,11 +304,11 @@ void Translator::installQMFiles(const QDir& dir, const char* locale)
 {
     QString filter = QString::fromLatin1("*_%1.qm").arg(QLatin1String(locale));
     QStringList fileNames = dir.entryList(QStringList(filter), QDir::Files, QDir::Name);
-    for (QStringList::Iterator it = fileNames.begin(); it != fileNames.end(); ++it){
+    for (const auto &it : fileNames){
         bool ok=false;
         for (std::list<QTranslator*>::const_iterator tt = d->translators.begin();
             tt != d->translators.end(); ++tt) {
-            if ((*tt)->objectName() == *it) {
+            if ((*tt)->objectName() == it) {
                 ok = true; // this file is already installed
                 break;
             }
@@ -315,9 +316,9 @@ void Translator::installQMFiles(const QDir& dir, const char* locale)
 
         // okay, we need to install this file
         if (!ok) {
-            QTranslator* translator = new QTranslator;
-            translator->setObjectName(*it);
-            if (translator->load(dir.filePath(*it))) {
+            auto translator = new QTranslator;
+            translator->setObjectName(it);
+            if (translator->load(dir.filePath(it))) {
                 qApp->installTranslator(translator);
                 d->translators.push_back(translator);
             }

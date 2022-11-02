@@ -229,35 +229,62 @@ bool MergeExporter::addMesh(const char *name, const MeshObject & mesh)
 
 // ----------------------------------------------------------------------------
 
-void Extension3MFFactory::addProducer(AbstractExtensionProducer* ext)
+AbstractFormatExtensionPtr GuiExtension3MFProducer::create() const
+{
+    return nullptr;
+}
+
+void GuiExtension3MFProducer::initialize()
+{
+    Base::PyGILStateLocker lock;
+    PyObject* module = PyImport_ImportModule("MeshGui");
+    if (module)
+        Py_DECREF(module);
+    else
+        PyErr_Clear();
+}
+
+void Extension3MFFactory::addProducer(Extension3MFProducer* ext)
 {
     producer.emplace_back(ext);
 }
 
-std::vector<Extension3MFPtr> Extension3MFFactory::create()
+void Extension3MFFactory::initialize()
+{
+    std::vector<Extension3MFProducerPtr> ext = producer;
+    for (const auto& it : ext) {
+        it->initialize();
+    }
+}
+
+std::vector<Extension3MFPtr> Extension3MFFactory::createExtensions()
 {
     std::vector<Extension3MFPtr> ext;
-    for (const auto& it : producer)
-        ext.emplace_back(it->create());
+    for (const auto& it : producer) {
+        Extension3MFPtr ptr = std::dynamic_pointer_cast<Extension3MF>(it->create());
+        if (ptr)
+            ext.push_back(ptr);
+    }
     return ext;
 }
 
-std::vector<AbstractExtensionProducerPtr> Extension3MFFactory::producer;
+std::vector<Extension3MFProducerPtr> Extension3MFFactory::producer;
 
 class Exporter3MF::Private {
 public:
-    Private(const std::string& filename)
-      : writer3mf(filename) {
-        ext = Extension3MFFactory::create();
+    explicit Private(const std::string& filename,
+                     const std::vector<Extension3MFPtr>& ext)
+      : writer3mf(filename)
+      , ext(ext) {
     }
     MeshCore::Writer3MF writer3mf;
     std::vector<Extension3MFPtr> ext;
 };
 
-Exporter3MF::Exporter3MF(std::string fileName)
+Exporter3MF::Exporter3MF(std::string fileName, const std::vector<Extension3MFPtr>& ext)
 {
     throwIfNoPermission(fileName);
-    d.reset(new Private(fileName));
+    d.reset(new Private(fileName, ext));
 }
 
 Exporter3MF::~Exporter3MF()

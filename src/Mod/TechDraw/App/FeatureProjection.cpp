@@ -22,7 +22,6 @@
 //this file originally part of Drawing workbench
 //migrated to TechDraw workbench 2022-01-26 by Wandererfan
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
@@ -32,14 +31,9 @@
 # include <TopoDS_Compound.hxx>
 #endif
 
-
-#include <Base/Writer.h>
-#include <Base/Reader.h>
-#include <Base/Exception.h>
-#include <Base/FileInfo.h>
-
 #include "FeatureProjection.h"
 #include "ProjectionAlgos.h"
+
 
 using namespace TechDraw;
 
@@ -50,18 +44,18 @@ PROPERTY_SOURCE(TechDraw::FeatureProjection, Part::Feature)
 FeatureProjection::FeatureProjection()
 {
     static const char *group = "Projection";
-    ADD_PROPERTY_TYPE(Source ,(nullptr),group,App::Prop_None,"Shape to project");
-    ADD_PROPERTY_TYPE(Direction ,(Base::Vector3d(0,0,1)),group,App::Prop_None,"Projection direction");
-    ADD_PROPERTY_TYPE(VCompound        ,(true),group,App::Prop_None,"Projection parameter");
-    ADD_PROPERTY_TYPE(Rg1LineVCompound ,(true),group,App::Prop_None,"Projection parameter");
-    ADD_PROPERTY_TYPE(RgNLineVCompound ,(true),group,App::Prop_None,"Projection parameter");
-    ADD_PROPERTY_TYPE(OutLineVCompound ,(true),group,App::Prop_None,"Projection parameter");
-    ADD_PROPERTY_TYPE(IsoLineVCompound ,(true),group,App::Prop_None,"Projection parameter");
-    ADD_PROPERTY_TYPE(HCompound        ,(true),group,App::Prop_None,"Projection parameter");
-    ADD_PROPERTY_TYPE(Rg1LineHCompound ,(true),group,App::Prop_None,"Projection parameter");
-    ADD_PROPERTY_TYPE(RgNLineHCompound ,(true),group,App::Prop_None,"Projection parameter");
-    ADD_PROPERTY_TYPE(OutLineHCompound ,(true),group,App::Prop_None,"Projection parameter");
-    ADD_PROPERTY_TYPE(IsoLineHCompound ,(true),group,App::Prop_None,"Projection parameter");
+    ADD_PROPERTY_TYPE(Source ,(nullptr), group, App::Prop_None, "Shape to project");
+    ADD_PROPERTY_TYPE(Direction ,(Base::Vector3d(0, 0,1)), group, App::Prop_None, "Projection direction");
+    ADD_PROPERTY_TYPE(VCompound        ,(true), group, App::Prop_None, "Projection parameter");
+    ADD_PROPERTY_TYPE(Rg1LineVCompound ,(true), group, App::Prop_None, "Projection parameter");
+    ADD_PROPERTY_TYPE(RgNLineVCompound ,(true), group, App::Prop_None, "Projection parameter");
+    ADD_PROPERTY_TYPE(OutLineVCompound ,(true), group, App::Prop_None, "Projection parameter");
+    ADD_PROPERTY_TYPE(IsoLineVCompound ,(true), group, App::Prop_None, "Projection parameter");
+    ADD_PROPERTY_TYPE(HCompound        ,(true), group, App::Prop_None, "Projection parameter");
+    ADD_PROPERTY_TYPE(Rg1LineHCompound ,(true), group, App::Prop_None, "Projection parameter");
+    ADD_PROPERTY_TYPE(RgNLineHCompound ,(true), group, App::Prop_None, "Projection parameter");
+    ADD_PROPERTY_TYPE(OutLineHCompound ,(true), group, App::Prop_None, "Projection parameter");
+    ADD_PROPERTY_TYPE(IsoLineHCompound ,(true), group, App::Prop_None, "Projection parameter");
 }
 
 FeatureProjection::~FeatureProjection()

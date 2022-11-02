@@ -68,7 +68,7 @@ DlgSettingsEditorImp::DlgSettingsEditorImp( QWidget* parent )
 
     d = new DlgSettingsEditorP();
     QColor col;
-    col = Qt::black;
+    col = qApp->palette().windowText().color();
     unsigned int lText = (col.red() << 24) | (col.green() << 16) | (col.blue() << 8);
     d->colormap.push_back(QPair<QString, unsigned int>
         (QString::fromLatin1(QT_TR_NOOP("Text")), lText));
@@ -133,7 +133,7 @@ DlgSettingsEditorImp::DlgSettingsEditorImp( QWidget* parent )
     ui->displayItems->setHeaderLabels(labels);
     ui->displayItems->header()->hide();
     for (QVector<QPair<QString, unsigned int> >::Iterator it = d->colormap.begin(); it != d->colormap.end(); ++it) {
-        QTreeWidgetItem* item = new QTreeWidgetItem(ui->displayItems);
+        auto item = new QTreeWidgetItem(ui->displayItems);
         item->setText(0, tr((*it).first.toLatin1()));
     }
     pythonSyntax = new PythonSyntaxHighlighter(ui->textEdit1);
@@ -194,7 +194,7 @@ void DlgSettingsEditorImp::saveSettings()
     // Saves the color map
     ParameterGrp::handle hGrp = WindowParameter::getDefaultParameter()->GetGroup("Editor");
     for (QVector<QPair<QString, unsigned int> >::Iterator it = d->colormap.begin(); it != d->colormap.end(); ++it) {
-        unsigned long col = static_cast<unsigned long>((*it).second);
+        auto col = static_cast<unsigned long>((*it).second);
         hGrp->SetUnsigned((*it).first.toLatin1(), col);
     }
 
@@ -232,7 +232,7 @@ void DlgSettingsEditorImp::loadSettings()
     // Restores the color map
     ParameterGrp::handle hGrp = WindowParameter::getDefaultParameter()->GetGroup("Editor");
     for (QVector<QPair<QString, unsigned int> >::Iterator it = d->colormap.begin(); it != d->colormap.end(); ++it){
-        unsigned long col = static_cast<unsigned long>((*it).second);
+        auto col = static_cast<unsigned long>((*it).second);
         col = hGrp->GetUnsigned((*it).first.toLatin1(), col);
         (*it).second = static_cast<unsigned int>(col);
         QColor color;

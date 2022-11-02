@@ -40,12 +40,14 @@
 #include <QPointer>
 #include <QProcess>
 #include <qrect.h>
-#include <qregexp.h>
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
+#include <QRegularExpressionMatchIterator>
+#include <QRegularExpressionValidator>
 #include <qrunnable.h>
 #include <QSet>
 #include <QSignalMapper>
 #include <QTemporaryFile>
-#include <qtextcodec.h>
 #include <qtextstream.h>
 #include <qthread.h>
 #include <qthreadpool.h>
@@ -111,6 +113,7 @@
 #include <qpainter.h>
 #include <qpalette.h>
 #include <qpixmap.h>
+#include <QPdfWriter>
 #include <QPixmapCache>
 #include <QPlainTextEdit>
 #include <QPrinter>

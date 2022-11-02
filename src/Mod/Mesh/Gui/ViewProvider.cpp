@@ -145,12 +145,12 @@ void ViewProviderMeshBuilder::createMesh(const App::Property* prop, SoCoordinate
     createMesh(rcMesh, coords, faces);
 }
 
-void ViewProviderMeshBuilder::createMesh(const MeshCore::MeshKernel& kernal, SoCoordinate3* coords, SoIndexedFaceSet* faces) const
+void ViewProviderMeshBuilder::createMesh(const MeshCore::MeshKernel& kernel, SoCoordinate3* coords, SoIndexedFaceSet* faces) const
 {
 
     // set the point coordinates
-    const MeshCore::MeshPointArray& cP = kernal.GetPoints();
-    coords->point.setNum(kernal.CountPoints());
+    const MeshCore::MeshPointArray& cP = kernel.GetPoints();
+    coords->point.setNum(kernel.CountPoints());
     SbVec3f* verts = coords->point.startEditing();
     int i=0;
     for (MeshCore::MeshPointArray::_TConstIterator it = cP.begin(); it != cP.end(); ++it, i++) {
@@ -160,8 +160,8 @@ void ViewProviderMeshBuilder::createMesh(const MeshCore::MeshKernel& kernal, SoC
 
     // set the face indices
     int j=0;
-    const MeshCore::MeshFacetArray& cF = kernal.GetFacets();
-    faces->coordIndex.setNum(4*kernal.CountFacets());
+    const MeshCore::MeshFacetArray& cF = kernel.GetFacets();
+    faces->coordIndex.setNum(4*kernel.CountFacets());
     int32_t* indices = faces->coordIndex.startEditing();
     for (MeshCore::MeshFacetArray::_TConstIterator it = cF.begin(); it != cF.end(); ++it, j++) {
         for (int i=0; i<3; i++) {
@@ -232,10 +232,10 @@ QIcon ViewProviderExport::getIcon() const
 
 // ------------------------------------------------------
 
-App::PropertyFloatConstraint::Constraints ViewProviderMesh::floatRange = {1.0f,64.0f,1.0f};
-App::PropertyFloatConstraint::Constraints ViewProviderMesh::angleRange = {0.0f,180.0f,1.0f};
-App::PropertyIntegerConstraint::Constraints ViewProviderMesh::intPercent = {0,100,1};
-const char* ViewProviderMesh::LightingEnums[]= {"One side","Two side",nullptr};
+App::PropertyFloatConstraint::Constraints ViewProviderMesh::floatRange = {1.0f, 64.0f, 1.0f};
+App::PropertyFloatConstraint::Constraints ViewProviderMesh::angleRange = {0.0f, 180.0f, 1.0f};
+App::PropertyIntegerConstraint::Constraints ViewProviderMesh::intPercent = {0, 100, 1};
+const char* ViewProviderMesh::LightingEnums[]= {"One side", "Two side", nullptr};
 
 PROPERTY_SOURCE(MeshGui::ViewProviderMesh, Gui::ViewProviderGeometryObject)
 
@@ -418,9 +418,9 @@ SoNode* ViewProviderMesh::getCoordNode() const
     return nullptr;
 }
 
-/** 
+/**
  * Extracts the mesh data from the feature \a pcFeature and creates
- * an Inventor node \a SoNode with these data. 
+ * an Inventor node \a SoNode with these data.
  */
 void ViewProviderMesh::attach(App::DocumentObject *pcFeat)
 {
@@ -490,7 +490,7 @@ void ViewProviderMesh::attach(App::DocumentObject *pcFeat)
     pcFlatWireRoot->addChild(pcShapeGroup);
     addDisplayMaskMode(pcFlatWireRoot, "Flat Lines");
 
-    if (getColorProperty()) {
+    if (getColorProperty() || getMaterialProperty()) {
         Coloring.setStatus(App::Property::Hidden, false);
     }
 }
@@ -503,39 +503,15 @@ void ViewProviderMesh::updateData(const App::Property* prop)
     if (prop->getTypeId() == App::PropertyColorList::getClassTypeId()) {
         Coloring.setStatus(App::Property::Hidden, false);
     }
+    else if (prop->getTypeId() == Mesh::PropertyMaterial::getClassTypeId()) {
+        Coloring.setStatus(App::Property::Hidden, false);
+    }
 }
 
 QIcon ViewProviderMesh::getIcon() const
 {
-#if 1
     static QIcon icon = Gui::BitmapFactory().pixmap("Mesh_Tree");
     return icon;
-#else
-    static const char * const Mesh_Feature_xpm[] = {
-        "16 16 4 1",
-        ".	c None",
-        "#	c #000000",
-        "s	c #BEC2FC",
-        "g	c #00FF00",
-        ".......##.......",
-        "....#######.....",
-        "..##ggg#ggg#....",
-        "##ggggg#gggg##..",
-        "#g#ggg#gggggg##.",
-        "#gg#gg#gggg###s.",
-        "#gg#gg#gg##gg#s.",
-        "#ggg#####ggg#ss.",
-        "#gggg##gggg#ss..",
-        ".#g##g#gggg#s...",
-        ".##ggg#ggg#ss...",
-        ".##gggg#g#ss....",
-        "..s#####g#s.....",
-        "....sss##ss.....",
-        "........ss......",
-        "................"};
-    QPixmap px(Mesh_Feature_xpm);
-    return px;
-#endif
 }
 
 App::PropertyColorList* ViewProviderMesh::getColorProperty() const
@@ -558,13 +534,12 @@ App::PropertyColorList* ViewProviderMesh::getColorProperty() const
 void ViewProviderMesh::tryColorPerVertexOrFace(bool on)
 {
     if (on) {
-        App::PropertyColorList* colors = getColorProperty();
-        if (colors) {
-            const Mesh::PropertyMeshKernel& meshProp = static_cast<Mesh::Feature*>(pcObject)->Mesh;
-            const Mesh::MeshObject& mesh = meshProp.getValue();
-            int numPoints = static_cast<int>(mesh.countPoints());
-            int numFacets = static_cast<int>(mesh.countFacets());
+        const Mesh::PropertyMeshKernel& meshProp = static_cast<Mesh::Feature*>(pcObject)->Mesh;
+        const Mesh::MeshObject& mesh = meshProp.getValue();
+        int numPoints = static_cast<int>(mesh.countPoints());
+        int numFacets = static_cast<int>(mesh.countFacets());
 
+        if (App::PropertyColorList* colors = getColorProperty()) {
             if (colors->getSize() == numPoints) {
                 setColorPerVertex(colors);
             }
@@ -572,44 +547,117 @@ void ViewProviderMesh::tryColorPerVertexOrFace(bool on)
                 setColorPerFace(colors);
             }
         }
+        else if (Mesh::PropertyMaterial* material = getMaterialProperty()) {
+            auto bind = material->getBinding();
+            if (bind == MeshCore::MeshIO::Binding::OVERALL) {
+                pcMatBinding->value = SoMaterialBinding::OVERALL;
+
+                if (!material->getDiffuseColor().empty()) {
+                    auto c = material->getDiffuseColor()[0];
+                    pcShapeMaterial->diffuseColor.setValue(c.r, c.g, c.b);
+                }
+                if (!material->getTransparency().empty()) {
+                    pcShapeMaterial->transparency.setValue(material->getTransparency()[0]);
+                }
+            }
+            else if (bind == MeshCore::MeshIO::Binding::PER_VERTEX) {
+                if (material->getDiffuseColor().size() == std::size_t(numPoints)) {
+                    pcMatBinding->value = SoMaterialBinding::PER_VERTEX_INDEXED;
+                    setDiffuseColor(material->getDiffuseColor());
+                }
+            }
+            else if (bind == MeshCore::MeshIO::Binding::PER_FACE) {
+                if (material->getAmbientColor().size() == std::size_t(numFacets)) {
+                    pcMatBinding->value = SoMaterialBinding::PER_FACE;
+                    setAmbientColor(material->getAmbientColor());
+                }
+                if (material->getDiffuseColor().size() == std::size_t(numFacets)) {
+                    pcMatBinding->value = SoMaterialBinding::PER_FACE;
+                    setDiffuseColor(material->getDiffuseColor());
+                }
+                if (material->getEmissiveColor().size() == std::size_t(numFacets)) {
+                    pcMatBinding->value = SoMaterialBinding::PER_FACE;
+                    setEmissiveColor(material->getEmissiveColor());
+                }
+                if (material->getSpecularColor().size() == std::size_t(numFacets)) {
+                    pcMatBinding->value = SoMaterialBinding::PER_FACE;
+                    setSpecularColor(material->getSpecularColor());
+                }
+                if (material->getTransparency().size() == std::size_t(numFacets)) {
+                    pcMatBinding->value = SoMaterialBinding::PER_FACE;
+                    setFacetTransparency(material->getTransparency());
+                }
+            }
+        }
     }
     else {
         pcMatBinding->value = SoMaterialBinding::OVERALL;
         const App::Color& c = ShapeColor.getValue();
         pcShapeMaterial->diffuseColor.setValue(c.r,c.g,c.b);
+        pcShapeMaterial->transparency.setValue(Transparency.getValue()/100.0f);
     }
 }
 
 void ViewProviderMesh::setColorPerVertex(const App::PropertyColorList* prop)
 {
     pcMatBinding->value = SoMaterialBinding::PER_VERTEX_INDEXED;
-    const std::vector<App::Color>& val = prop->getValues();
-
-    pcShapeMaterial->diffuseColor.setNum(val.size());
-    SbColor* col = pcShapeMaterial->diffuseColor.startEditing();
-
-    std::size_t i=0;
-    for (std::vector<App::Color>::const_iterator it = val.begin(); it != val.end(); ++it) {
-        col[i++].setValue(it->r, it->g, it->b);
-    }
-
-    pcShapeMaterial->diffuseColor.finishEditing();
+    setDiffuseColor(prop->getValues());
 }
 
 void ViewProviderMesh::setColorPerFace(const App::PropertyColorList* prop)
 {
     pcMatBinding->value = SoMaterialBinding::PER_FACE;
-    const std::vector<App::Color>& val = prop->getValues();
-    
-    pcShapeMaterial->diffuseColor.setNum(val.size());
-    SbColor* col = pcShapeMaterial->diffuseColor.startEditing();
+    setDiffuseColor(prop->getValues());
+}
+
+void ViewProviderMesh::setColorField(const std::vector<App::Color>& val, SoMFColor& field)
+{
+    field.setNum(val.size());
+    SbColor* col = field.startEditing();
 
     std::size_t i=0;
     for (std::vector<App::Color>::const_iterator it = val.begin(); it != val.end(); ++it) {
         col[i++].setValue(it->r, it->g, it->b);
     }
 
-    pcShapeMaterial->diffuseColor.finishEditing();
+    field.finishEditing();
+}
+
+void ViewProviderMesh::setAmbientColor(const std::vector<App::Color>& val)
+{
+    setColorField(val, pcShapeMaterial->ambientColor);
+}
+
+void ViewProviderMesh::setDiffuseColor(const std::vector<App::Color>& val)
+{
+    setColorField(val, pcShapeMaterial->diffuseColor);
+}
+
+void ViewProviderMesh::setSpecularColor(const std::vector<App::Color>& val)
+{
+    setColorField(val, pcShapeMaterial->specularColor);
+}
+
+void ViewProviderMesh::setEmissiveColor(const std::vector<App::Color>& val)
+{
+    setColorField(val, pcShapeMaterial->emissiveColor);
+}
+
+Mesh::PropertyMaterial* ViewProviderMesh::getMaterialProperty() const
+{
+    if (pcObject) {
+        std::map<std::string,App::Property*> Map;
+        pcObject->getPropertyMap(Map);
+        for (std::map<std::string,App::Property*>::iterator it = Map.begin(); it != Map.end(); ++it) {
+            Base::Type type = it->second->getTypeId();
+            if (type == Mesh::PropertyMaterial::getClassTypeId()) {
+                Mesh::PropertyMaterial* material = static_cast<Mesh::PropertyMaterial*>(it->second);
+                return material;
+            }
+        }
+    }
+
+    return nullptr; // no such property found
 }
 
 void ViewProviderMesh::setDisplayMode(const char* ModeName)
@@ -833,7 +881,7 @@ bool ViewProviderMesh::createToolMesh(const std::vector<SbVec2f>& rclPoly, const
     MeshCore::EarClippingTriangulator cTria;
     cTria.SetPolygon(polygon);
     bool ok = cTria.TriangulatePolygon();
-  
+
     std::vector<MeshFacet> faces = cTria.GetFacets();
     for (std::vector<MeshFacet>::iterator itF = faces.begin(); itF != faces.end(); ++itF) {
         MeshGeomFacet topFacet;
@@ -1061,8 +1109,8 @@ void ViewProviderMesh::partMeshCallback(void * ud, SoEventCallback * cb)
     SbVec3f b,n;
     view->getNearPlane(b, n);
     Base::Vector3f cNormal(n[0],n[1],n[2]);
-    SoCamera* pCam = view->getSoRenderManager()->getCamera();  
-    SbViewVolume  vol = pCam->getViewVolume(); 
+    SoCamera* pCam = view->getSoRenderManager()->getCamera();
+    SbViewVolume  vol = pCam->getViewVolume();
 
     // create a tool shape from these points
     std::vector<MeshCore::MeshGeomFacet> aFaces;
@@ -1125,8 +1173,8 @@ void ViewProviderMesh::segmMeshCallback(void * ud, SoEventCallback * cb)
     SbVec3f b,n;
     view->getNearPlane(b, n);
     Base::Vector3f cNormal(n[0],n[1],n[2]);
-    SoCamera* pCam = view->getSoRenderManager()->getCamera();  
-    SbViewVolume  vol = pCam->getViewVolume(); 
+    SoCamera* pCam = view->getSoRenderManager()->getCamera();
+    SbViewVolume  vol = pCam->getViewVolume();
 
     // create a tool shape from these points
     std::vector<MeshCore::MeshGeomFacet> aFaces;
@@ -1301,7 +1349,7 @@ void ViewProviderMesh::boxZoom(const SbBox2s& box, const SbViewportRegion & vp, 
 
     // The bbox must not be empty i.e. width and length is zero, but it is possible that
     // either width or length is zero
-    if (sizeX == 0 && sizeY == 0) 
+    if (sizeX == 0 && sizeY == 0)
         return;
 
     // Get the new center in normalized pixel coordinates
@@ -1566,7 +1614,7 @@ void ViewProviderMesh::segmentMesh(const MeshCore::MeshKernel& toolMesh, const B
 
 void ViewProviderMesh::faceInfoCallback(void * ud, SoEventCallback * n)
 {
-    const SoMouseButtonEvent * mbe = (SoMouseButtonEvent *)n->getEvent();
+    const SoMouseButtonEvent * mbe = static_cast<const SoMouseButtonEvent *>(n->getEvent());
     Gui::View3DInventorViewer* view  = static_cast<Gui::View3DInventorViewer*>(n->getUserData());
 
     // Mark all incoming mouse button events as handled, especially, to deactivate the selection node
@@ -1648,7 +1696,7 @@ void ViewProviderMesh::faceInfoCallback(void * ud, SoEventCallback * n)
 
 void ViewProviderMesh::fillHoleCallback(void * ud, SoEventCallback * n)
 {
-    const SoMouseButtonEvent * mbe = (SoMouseButtonEvent *)n->getEvent();
+    const SoMouseButtonEvent * mbe = static_cast<const SoMouseButtonEvent *>(n->getEvent());
     Gui::View3DInventorViewer* view  = static_cast<Gui::View3DInventorViewer*>(n->getUserData());
 
     // Mark all incoming mouse button events as handled, especially, to deactivate the selection node
@@ -1840,12 +1888,14 @@ void ViewProviderMesh::fillHole(Mesh::FacetIndex uFacet)
 
 void ViewProviderMesh::setFacetTransparency(const std::vector<float>& facetTransparency)
 {
-    App::Color c = ShapeColor.getValue();
-    pcShapeMaterial->diffuseColor.setNum(facetTransparency.size());
-    SbColor* cols = pcShapeMaterial->diffuseColor.startEditing();
-    for (std::size_t index = 0; index < facetTransparency.size(); ++index)
-        cols[index].setValue(c.r, c.g, c.b);
-    pcShapeMaterial->diffuseColor.finishEditing();
+    if (pcShapeMaterial->diffuseColor.getNum() != int(facetTransparency.size())) {
+        App::Color c = ShapeColor.getValue();
+        pcShapeMaterial->diffuseColor.setNum(facetTransparency.size());
+        SbColor* cols = pcShapeMaterial->diffuseColor.startEditing();
+        for (std::size_t index = 0; index < facetTransparency.size(); ++index)
+            cols[index].setValue(c.r, c.g, c.b);
+        pcShapeMaterial->diffuseColor.finishEditing();
+    }
 
     pcShapeMaterial->transparency.setNum(facetTransparency.size());
     float* tran = pcShapeMaterial->transparency.startEditing();

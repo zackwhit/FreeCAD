@@ -31,6 +31,7 @@
         <file>icons/actions/TechDraw_Multiview.svg</file>
         <file>icons/actions/TechDraw_PageDefault.svg</file>
         <file>icons/actions/TechDraw_PageTemplate.svg</file>
+        <file>icons/actions/TechDraw_PrintAll.svg</file>
         <file>icons/actions/TechDraw_ProjectionGroup.svg</file>
         <file>icons/actions/TechDraw_ProjectShape.svg</file>
         <file>icons/actions/TechDraw_Quadrants.svg</file>
@@ -40,12 +41,17 @@
         <file>icons/actions/TechDraw_ShareView.svg</file>
         <file>icons/actions/TechDraw_ShowAll.svg</file>
         <file>icons/actions/TechDraw_SpreadsheetView.svg</file>
+        <file>icons/actions/TechDraw_StackTop.svg</file>
+        <file>icons/actions/TechDraw_StackBottom.svg</file>
+        <file>icons/actions/TechDraw_StackUp.svg</file>
+        <file>icons/actions/TechDraw_StackDown.svg</file>
         <file>icons/actions/TechDraw_Symbol.svg</file>
         <file>icons/actions/TechDraw_Tile.svg</file>
         <file>icons/actions/TechDraw_ToggleFrame.svg</file>
         <file>icons/actions/TechDraw_View.svg</file>
         <file>icons/actions/TechDraw_WeldSymbol.svg</file>
         <file>icons/actions/TechDraw_SurfaceFinishSymbols.svg</file>
+        <file>icons/actions/TechDraw_ComplexSection.svg</file>
         <file>icons/arrow-ccw.svg</file>
         <file>icons/arrow-cw.svg</file>
         <file>icons/arrow-down.svg</file>
@@ -174,6 +180,8 @@
 
         <!-- main wb icon and preferences icons -->
         <file>icons/preferences-techdraw.svg</file>
+
+        <!-- bitmap images -->
 
         <!-- translations -->
         <file>translations/TechDraw_af.qm</file>

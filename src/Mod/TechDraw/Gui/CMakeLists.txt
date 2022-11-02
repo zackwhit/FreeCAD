@@ -26,15 +26,14 @@ include_directories(
     ${XercesC_INCLUDE_DIRS}
 )
 
-if(BUILD_QT5)
+if(FREECAD_QT_MAJOR_VERSION EQUAL 5)
     include_directories(
-        ${Qt5XmlPatterns_INCLUDE_DIRS}
+        ${QtXmlPatterns_INCLUDE_DIRS}
     )
-else(BUILD_QT5)
-    include_directories(
-        ${QT_QTXMLPATTERNS_INCLUDE_DIR}
-    )
-endif(BUILD_QT5)
+else()
+    # This is deprecated as of Qt 5.13, and removed in Qt 6
+    message(WARNING "TechDraw relies on the now-removed Qt XMLPatterns package, and must be refactored to compile against Qt6.")
+endif()
 
 # The XML files
 set(TechDrawGui_XML_SRCS
@@ -47,11 +46,7 @@ set(TechDrawGui_LIBS
     FreeCADGui
 )
 
-if(BUILD_QT5)
-    qt5_add_resources(TechDrawGui_SRCS Resources/TechDraw.qrc)
-else()
-    qt4_add_resources(TechDrawGui_SRCS Resources/TechDraw.qrc)
-endif()
+qt_add_resources(TechDrawGui_SRCS Resources/TechDraw.qrc)
 
 set(TechDrawGui_UIC_SRCS
     DlgPageChooser.ui
@@ -87,13 +82,8 @@ set(TechDrawGui_UIC_SRCS
     SymbolChooser.ui
     TaskMoveView.ui
     TaskProjection.ui
+    TaskComplexSection.ui
 )
-
-if(BUILD_QT5)
-    qt5_wrap_ui(TechDrawGui_UIC_HDRS ${TechDrawGui_UIC_SRCS})
-else()
-    qt4_wrap_ui(TechDrawGui_UIC_HDRS ${TechDrawGui_UIC_SRCS})
-endif()
 
 SET(MRTE_SRCS
     mrichtextedit.ui
@@ -116,6 +106,7 @@ SET(TechDrawGui_SRCS
     CommandAnnotate.cpp
     CommandExtensionDims.cpp
     CommandExtensionPack.cpp
+    CommandStack.cpp
     Resources/TechDraw.qrc
     PreCompiled.cpp
     PreCompiled.h
@@ -221,6 +212,15 @@ SET(TechDrawGui_SRCS
     TaskProjection.cpp
     TaskProjection.h
     TaskProjection.ui
+    TaskComplexSection.cpp
+    TaskComplexSection.h
+    TaskComplexSection.ui
+    Widgets/CompassDialWidget.cpp
+    Widgets/CompassDialWidget.h
+    Widgets/CompassWidget.cpp
+    Widgets/CompassWidget.h
+    Widgets/VectorEditWidget.cpp
+    Widgets/VectorEditWidget.h
 )
 
 SET(TechDrawGuiView_SRCS
@@ -418,6 +418,7 @@ SET(TechDrawGuiTaskDlgs_SRCS
     TaskCustomizeFormat.ui
     TaskMoveView.ui
     TaskProjection.ui
+    TaskComplexSection.ui
 )
 
 SOURCE_GROUP("MRTE" FILES ${MRTE_SRCS})

@@ -23,22 +23,16 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+# include <sstream>
 #endif
-
-#include <sstream>
-#include <fstream>
 
 #include <App/Application.h>
 #include <App/Document.h>
-#include <Base/Console.h>
-#include <Base/Exception.h>
-#include <Base/Parameter.h>
-#include <Base/Tools.h>
 
+#include "DrawTileWeld.h"
+#include "DrawTileWeldPy.h"  // generated from DrawTileWeldPy.xml
 #include "DrawUtil.h"
 
-#include <Mod/TechDraw/App/DrawTileWeldPy.h>  // generated from DrawTileWeldPy.xml
-#include "DrawTileWeld.h"
 
 using namespace TechDraw;
 
@@ -52,7 +46,7 @@ DrawTileWeld::DrawTileWeld()
 {
     static const char *group = "TileWeld";
 
-    ADD_PROPERTY_TYPE(LeftText,(""),group,(App::PropertyType)(App::Prop_None),
+    ADD_PROPERTY_TYPE(LeftText, (""), group, (App::PropertyType)(App::Prop_None),
                       "Text before symbol");
     ADD_PROPERTY_TYPE(RightText, (nullptr), group, App::Prop_None, "Text after symbol");
     ADD_PROPERTY_TYPE(CenterText, (nullptr), group, App::Prop_None, "Text above/below symbol");
@@ -60,7 +54,7 @@ DrawTileWeld::DrawTileWeld()
     ADD_PROPERTY_TYPE(SymbolIncluded, (""), group, App::Prop_None,
                                             "Embedded Symbol. System use only.");   // n/a to end users
 
-//    SymbolFile.setStatus(App::Property::ReadOnly,true);
+//    SymbolFile.setStatus(App::Property::ReadOnly, true);
 
     std::string svgFilter("Symbol files (*.svg *.SVG);;All files (*)");
     SymbolFile.setFilter(svgFilter);
@@ -93,7 +87,7 @@ short DrawTileWeld::mustExecute() const
 }
 
 App::DocumentObjectExecReturn *DrawTileWeld::execute()
-{ 
+{
 //    Base::Console().Message("DTW::execute()\n");
     return DrawTile::execute();
 }
@@ -110,7 +104,7 @@ void DrawTileWeld::replaceSymbolIncluded(std::string newSymbolFile)
     }
 }
 
-void DrawTileWeld::onDocumentRestored() 
+void DrawTileWeld::onDocumentRestored()
 {
 //    Base::Console().Message("DTW::onDocumentRestored()\n");
     if (SymbolIncluded.isEmpty()) {
@@ -172,7 +166,7 @@ PyObject *DrawTileWeld::getPyObject()
 {
     if (PythonObject.is(Py::_None())) {
         // ref counter is set to 1
-        PythonObject = Py::Object(new DrawTileWeldPy(this),true);
+        PythonObject = Py::Object(new DrawTileWeldPy(this), true);
     }
     return Py::new_reference_to(PythonObject);
 }

@@ -23,14 +23,12 @@
 #ifndef TECHDRAWGUI_MDIVIEWPAGE_H
 #define TECHDRAWGUI_MDIVIEWPAGE_H
 
-#include <Mod/TechDraw/TechDrawGlobal.h>
-
-#include <QPointF>
 #include <QPrinter>
 
 #include <Gui/MDIView.h>
 #include <Gui/MDIViewPy.h>
 #include <Gui/Selection.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
 
 #include "ViewProviderPage.h"
 
@@ -72,11 +70,11 @@ public:
     void preSelectionChanged(const QPoint &pos);
 
     /// QGraphicsScene selection routines
-    void selectQGIView(App::DocumentObject *obj, bool state);
+    void selectQGIView(App::DocumentObject *obj, bool isSelected);
     void clearSceneSelection();
     void blockSceneSelection(bool isBlocked);
 
-    bool onMsg(const char* pMsg,const char** ppReturn) override;
+    bool onMsg(const char* pMsg, const char** ppReturn) override;
     bool onHasMsg(const char* pMsg) const override;
 
     void print() override;
@@ -84,6 +82,22 @@ public:
     void printPdf() override;
     void printPdf(std::string file);
     void printPreview() override;
+    static void printAllPages();
+    static void printAll(QPrinter* printer,
+                         App::Document* doc);
+    static void printAllPdf(QPrinter* printer,
+                            App::Document* doc);
+    static void printBannerPage(QPrinter* printer, QPainter& painter,
+                                QPageLayout& pageLayout,
+                                App::Document* doc,
+                                std::vector<App::DocumentObject*>& docObjs);
+    static void renderPage(ViewProviderPage* vpp,
+                           QPainter& painter,
+                           QRectF& sourceRect,
+                           QRect& targetRect);
+    static void setPageLayout(QPageLayout& pageLayout,
+                              TechDraw::DrawPage* dPage,
+                              double& width, double& height);
 
     void saveSVG(std::string file);
     void saveDXF(std::string file);
@@ -97,9 +111,8 @@ public:
 
     ViewProviderPage* getViewProviderPage() {return m_vpPage;}
 
-    void setTabText(std::string t);
+    void setTabText(std::string tabText);
 
-    static MDIViewPage *getFromScene(const QGSPage *scene);
     void contextMenuEvent(QContextMenuEvent *event) override;
 
     void setScene(QGSPage* scene, QGVPage* view);
@@ -111,30 +124,30 @@ public Q_SLOTS:
     void savePDF();
     void toggleFrame();
     void toggleKeepUpdated();
-//    void testAction(void);
     void sceneSelectionChanged();
+    void printAll();
 
 protected:
-    void closeEvent(QCloseEvent*) override;
+    void closeEvent(QCloseEvent* event) override;
 
-    void showStatusMsg(const char* s1, const char* s2, const char* s3) const;
-    
+    void showStatusMsg(const char* string1, const char* string2, const char* string3) const;
+
     void onDeleteObject(const App::DocumentObject& obj);
 
-    using Connection = boost::signals2::connection;
-    Connection connectDeletedObject;
-
-    bool compareSelections(std::vector<Gui::SelectionObject> treeSel,QList<QGraphicsItem*> sceneSel);
+    bool compareSelections(std::vector<Gui::SelectionObject> treeSel, QList<QGraphicsItem*> sceneSel);
     void setTreeToSceneSelect();
     void sceneSelectionManager();
 
 private:
+    using Connection = boost::signals2::connection;
+    Connection connectDeletedObject;
+
     QAction *m_toggleFrameAction;
     QAction *m_toggleKeepUpdatedAction;
     QAction *m_exportSVGAction;
     QAction *m_exportDXFAction;
     QAction *m_exportPDFAction;
-//    QAction* m_testAction;
+    QAction *m_printAllAction;
 
     std::string m_objectName;
     std::string m_documentName;
@@ -146,7 +159,7 @@ private:
 
     QList<QGraphicsItem*> m_qgSceneSelected;        //items in selection order
 
-    void getPaperAttributes(void);
+    void getPaperAttributes();
     QPageLayout::Orientation m_orientation;
     QPageSize::PageSizeId m_paperSize;
     double m_pagewidth, m_pageheight;
@@ -163,7 +176,7 @@ public:
     ~MDIViewPagePy() override;
 
     Py::Object repr() override;
-    Py::Object getattr(const char *) override;
+    Py::Object getattr(const char * attrName) override;
     Py::Object getPage(const Py::Tuple&);
     Py::Object cast_to_base(const Py::Tuple&);
 

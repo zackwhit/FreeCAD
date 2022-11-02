@@ -103,10 +103,10 @@ private:
     void setButtonsEnabled();
 
 private Q_SLOTS:
-    void on_addButton_clicked();
-    void on_removeButton_clicked();
-    void on_upButton_clicked();
-    void on_downButton_clicked();
+    void onAddButtonClicked();
+    void onRemoveButtonClicked();
+    void onUpButtonClicked();
+    void onDownButtonClicked();
     void onCurrentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*);
     void onItemDoubleClicked(QTreeWidgetItem * item, int column);
 
@@ -266,6 +266,10 @@ Q_SIGNALS:
 
 protected:
     void paintEvent (QPaintEvent*) override;
+
+private:
+    void showModeless();
+    void showModal();
 
 private:
     struct ColorButtonP *d;

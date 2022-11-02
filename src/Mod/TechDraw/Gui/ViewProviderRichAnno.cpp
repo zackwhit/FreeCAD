@@ -31,6 +31,7 @@
 #include <Mod/TechDraw/App/LineGroup.h>
 
 #include "PreferencesGui.h"
+#include "ZVALUE.h"
 #include "QGIView.h"
 #include "TaskRichAnno.h"
 #include "QGSPage.h"
@@ -59,11 +60,12 @@ ViewProviderRichAnno::ViewProviderRichAnno()
 
     static const char *group = "Frame Format";
 
-    ADD_PROPERTY_TYPE(LineWidth, (getDefLineWeight()), group,(App::PropertyType)(App::Prop_None), "Frame line width");
+    ADD_PROPERTY_TYPE(LineWidth, (getDefLineWeight()), group, (App::PropertyType)(App::Prop_None), "Frame line width");
     LineStyle.setEnums(LineStyleEnums);
     ADD_PROPERTY_TYPE(LineStyle, (1), group, (App::PropertyType)(App::Prop_None), "Frame line style");
     ADD_PROPERTY_TYPE(LineColor, (getDefLineColor()), group, App::Prop_None, "The color of the frame");
 
+    StackOrder.setValue(ZVALUE::DIMENSION);
 }
 
 ViewProviderRichAnno::~ViewProviderRichAnno()

@@ -23,6 +23,8 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <sstream>
+# include <QRegularExpression>
+# include <QRegularExpressionMatch>
 #endif
 
 #include "Command.h"
@@ -52,7 +54,7 @@ PyObject* CommandPy::get(PyObject *args)
 
     Command* cmd = Application::Instance->commandManager().getCommandByName(pName);
     if (cmd) {
-        CommandPy* cmdPy = new CommandPy(cmd);
+        auto cmdPy = new CommandPy(cmd);
         return cmdPy;
     }
 
@@ -76,8 +78,8 @@ PyObject* CommandPy::listAll(PyObject *args)
     std::vector <Command*> cmds = Application::Instance->commandManager().getAllCommands();
     PyObject* pyList = PyList_New(cmds.size());
     int i=0;
-    for ( std::vector<Command*>::iterator it = cmds.begin(); it != cmds.end(); ++it ) {
-        PyObject* str = PyUnicode_FromString((*it)->getName());
+    for (const auto & cmd : cmds) {
+        PyObject* str = PyUnicode_FromString(cmd->getName());
         PyList_SetItem(pyList, i++, str);
     }
     return pyList;
@@ -97,15 +99,14 @@ PyObject* CommandPy::listByShortcut(PyObject *args)
         if (action) {
             QString spc = QString::fromLatin1(" ");
             if (Base::asBoolean(bIsRegularExp)) {
-               QRegExp re = QRegExp(QString::fromLatin1(shortcut_to_find));
-               re.setCaseSensitivity(Qt::CaseInsensitive);
+               QRegularExpression re(QString::fromLatin1(shortcut_to_find), QRegularExpression::CaseInsensitiveOption);
                if (!re.isValid()) {
                    std::stringstream str;
                    str << "Invalid regular expression:" << ' ' << shortcut_to_find;
                    throw Py::RuntimeError(str.str());
                }
 
-               if (re.indexIn(action->shortcut().toString().remove(spc).toUpper()) != -1) {
+               if (re.match(action->shortcut().toString().remove(spc).toUpper()).hasMatch()) {
                    matches.emplace_back(c->getName());
                }
             }
@@ -302,7 +303,7 @@ PyObject* CommandPy::getAction(PyObject *args)
     Command* cmd = this->getCommandPtr();
     if (cmd) {
         Action* action = cmd->getAction();
-        ActionGroup* group = qobject_cast<ActionGroup*>(action);
+        auto* group = qobject_cast<ActionGroup*>(action);
 
         PythonWrapper wrap;
         wrap.loadWidgetsModule();
@@ -342,7 +343,7 @@ PyObject* CommandPy::createCustomCommand(PyObject* args, PyObject* kw)
 
     auto name = Application::Instance->commandManager().newMacroName();
     CommandManager& commandManager = Application::Instance->commandManager();
-    MacroCommand* macro = new MacroCommand(name.c_str(), false);
+    auto macro = new MacroCommand(name.c_str(), false);
     commandManager.addCommand(macro);
 
     macro->setScriptName(macroFile); 

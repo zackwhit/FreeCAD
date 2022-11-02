@@ -63,16 +63,16 @@ void QGVNavStyle::initialize()
     this->shiftdown = false;
     this->altdown = false;
     this->invertZoom = App::GetApplication().GetParameterGroupByPath
-        ("User parameter:BaseApp/Preferences/View")->GetBool("InvertZoom",true);
+        ("User parameter:BaseApp/Preferences/View")->GetBool("InvertZoom", true);
     this->zoomAtCursor = App::GetApplication().GetParameterGroupByPath
-        ("User parameter:BaseApp/Preferences/View")->GetBool("ZoomAtCursor",true);
+        ("User parameter:BaseApp/Preferences/View")->GetBool("ZoomAtCursor", true);
     this->zoomStep = App::GetApplication().GetParameterGroupByPath
-        ("User parameter:BaseApp/Preferences/View")->GetFloat("ZoomStep",0.2f);
+        ("User parameter:BaseApp/Preferences/View")->GetFloat("ZoomStep", 0.2f);
 
     Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
         .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/General");
-    m_reversePan = hGrp->GetInt("KbPan",1);
-    m_reverseScroll = hGrp->GetInt("KbScroll",1);
+    m_reversePan = hGrp->GetInt("KbPan", 1);
+    m_reverseScroll = hGrp->GetInt("KbScroll", 1);
 
     panningActive = false;
     zoomingActive = false;
@@ -81,6 +81,8 @@ void QGVNavStyle::initialize()
     m_zoomPending = false;
     m_clickButton = Qt::NoButton;
     m_saveCursor = getViewer()->cursor();
+    m_wheelDeltaCounter = 0;
+    m_mouseDeltaCounter = 0;
 }
 
 void QGVNavStyle::setAnchor()
@@ -114,7 +116,7 @@ void QGVNavStyle::handleKeyPressEvent(QKeyEvent *event)
 {
     if(event->modifiers().testFlag(Qt::ControlModifier)) {
         switch(event->key()) {
-            case Qt::Key_Plus: { 
+            case Qt::Key_Plus: {
                 zoom(1.0 + zoomStep);
                 event->accept();
                 break;
@@ -159,7 +161,6 @@ void QGVNavStyle::handleKeyPressEvent(QKeyEvent *event)
             }
             case Qt::Key_Shift: {
                 this->shiftdown = true;
-                Base::Console().Message("QGVNS::handleKeyPressEvent - shift pressed\n");
                 event->accept();
                 break;
             }
@@ -177,7 +178,6 @@ void QGVNavStyle::handleKeyReleaseEvent(QKeyEvent *event)
         switch(event->key()) {
             case Qt::Key_Shift: {
                 this->shiftdown = false;
-                Base::Console().Message("QGVNS::handleKeyPressEvent - shift released\n");
                 event->accept();
                 break;
             }
@@ -268,32 +268,44 @@ void QGVNavStyle::pseudoContextEvent()
 
 void QGVNavStyle::handleWheelEvent(QWheelEvent *event)
 {
-//Delta is the distance that the wheel is rotated, in eighths of a degree.
-//positive indicates rotation forwards away from the user; negative backwards toward the user.
-//Most mouse types work in steps of 15 degrees, in which case the delta value is a multiple of 120; i.e., 120 units * 1/8 = 15 degrees.
-//1 click = 15 degrees.  15 degrees = 120 deltas.  delta/240 -> 1 click = 0.5 ==> factor = 1.2^0.5 = 1.095
-//                                                              1 click = -0.5 ==> factor = 1.2^-0.5 = 0.91
-//so to change wheel direction, multiply (event->delta() / 240.0) by +/-1
-    double mouseBase = 1.2;        //magic numbers. change for different mice?
-    double mouseAdjust = -240.0;
-    if (invertZoom) {
-        mouseAdjust = -mouseAdjust;
+//gets called once for every click of the wheel. the sign of event->angleDelta().y()
+//gives the direction of wheel rotation. positive indicates rotation forwards away
+//from the user; negative backwards toward the user. the magnitude of
+//event->angleDelta().y() is 120 for most mice which represents 120/8 = 15 degrees of
+//rotation. Some high resolution mice/trackpads report smaller values - ie a click is less than
+//15 degrees of wheel rotation.
+//https://doc.qt.io/qt-5/qwheelevent.html#angleDelta
+    //to avoid overly sensitive behaviour in high resolution mice/touchpads,
+    //save up wheel clicks until the wheel has rotated at least 15 degrees.
+    constexpr int wheelDeltaThreshold = 120;
+    m_wheelDeltaCounter += std::abs(event->angleDelta().y());
+    if (m_wheelDeltaCounter < wheelDeltaThreshold) {
+        return;
     }
-
-    int delta = event->angleDelta().y();
-    qreal factor = std::pow(mouseBase, delta / mouseAdjust);
-    zoom(factor);
+    m_wheelDeltaCounter = 0;
+    //starting with -ve direction keeps us in sync with the behaviour of the 3d window
+    int rotationDirection = - event->angleDelta().y() / std::abs(event->angleDelta().y());
+    if (invertZoom) {
+        rotationDirection = -rotationDirection;
+    }
+    double zoomFactor = 1 + rotationDirection * zoomStep;
+    zoom(zoomFactor);
 }
 
 void QGVNavStyle::zoom(double factor)
 {
-    QPoint center = getViewer()->viewport()->rect().center();
+    constexpr double minimumScale(0.01);
+    QTransform transform = getViewer()->transform();
+    double xScale = transform.m11();
+    if (xScale <= minimumScale &&
+        factor < 1.0) {
+        //don't scale any smaller than this
+        return;
+    }
+
+    setAnchor();
     getViewer()->scale(factor,
                        factor);
-
-    QPoint newCenter = getViewer()->viewport()->rect().center();
-    QPoint change = newCenter - center;
-    getViewer()->translate(change.x(), change.y());
     m_zoomPending = false;
 }
 
@@ -316,18 +328,19 @@ void QGVNavStyle::stopZoom()
 
 double QGVNavStyle::mouseZoomFactor(QPoint p)
 {
-//    Base::Console().Message("QGVNS::mouseZoomFactor(%s)\n", TechDraw::DrawUtil::formatVector(p).c_str());
-    QPoint movement = p - zoomOrigin;
-    double sensitivity = 0.1;
-    double direction = 1.0;
-    double invert = 1.0;
-    if (movement.y() < 0.0) {
+    constexpr int threshold(20);
+    int verticalTravel = (p - zoomOrigin).y();
+    m_mouseDeltaCounter += std::abs(verticalTravel);
+    if (m_mouseDeltaCounter < threshold) {
+        //do not zoom yet
+        return 1.0;
+    }
+    m_mouseDeltaCounter = 0;
+    double direction = verticalTravel / std::abs(verticalTravel);
+    if (invertZoom) {
         direction = -direction;
     }
-    if (invertZoom) {
-        invert = -invert;
-    }
-    double factor = 1.0 + (direction * invert * zoomStep * sensitivity);
+    double factor = 1.0 + (direction * zoomStep);
     zoomOrigin = p;
     return factor;
 }

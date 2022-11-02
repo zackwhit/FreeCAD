@@ -22,16 +22,15 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _DrawViewMulti_h_
-#define _DrawViewMulti_h_
+#ifndef DrawViewMulti_h_
+#define DrawViewMulti_h_
 
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#include <TopoDS_Compound.hxx>
 
 #include <App/DocumentObject.h>
 #include <App/FeaturePython.h>
 #include <App/PropertyLinks.h>
-
-#include <TopoDS_Compound.hxx>
+#include <Mod/TechDraw/TechDrawGlobal.h>
 
 #include "DrawViewPart.h"
 
@@ -58,7 +57,7 @@ public:
     /// Constructor
     DrawViewMulti();
     ~DrawViewMulti() override;
-  
+
     App::PropertyLinkList    Sources;
 
     short mustExecute() const override;

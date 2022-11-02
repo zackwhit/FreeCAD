@@ -20,18 +20,17 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _TECHDRAW_FEATUREVIEWGROUP_H_
-#define _TECHDRAW_FEATUREVIEWGROUP_H_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef TECHDRAW_FEATUREVIEWGROUP_H_
+#define TECHDRAW_FEATUREVIEWGROUP_H_
 
 #include <string>
-# include <QRectF>
+#include <QRectF>
 
 #include <App/DocumentObject.h>
 #include <App/PropertyLinks.h>
 #include <Base/BoundBox.h>
 #include <Base/Vector3D.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
 
 #include "DrawViewCollection.h"
 
@@ -41,6 +40,7 @@ class gp_Pnt;
 
 namespace TechDraw
 {
+const int MAXPROJECTIONCOUNT = 10;
 
 class DrawProjGroupItem;
 
@@ -55,7 +55,7 @@ class TechDrawExport DrawProjGroup : public TechDraw::DrawViewCollection
 public:
     /// Constructor
     DrawProjGroup();
-    ~DrawProjGroup() override;
+    ~DrawProjGroup() = default;
 
     App::PropertyLinkList   Source;
     App::PropertyXLinkList  XSource;
@@ -156,15 +156,15 @@ protected:
      */
     bool checkViewProjType(const char *in);
 
-    void arrangeViewPointers(DrawProjGroupItem *viewPtrs[10]) const;
+    void arrangeViewPointers(std::array<DrawProjGroupItem*, MAXPROJECTIONCOUNT>& viewPtrs) const;
 
     /// Populates array of 10 BoundBox3d's given DrawProjGroupItem *s
     /*!
      * If documentScale is set, then returned bounding boxes are scaled as in
      * the Drawing.  Otherwise, the dimensions are as in object space.
      */
-    void makeViewBbs(DrawProjGroupItem *viewPtrs[10],
-                     Base::BoundBox3d bboxes[10],
+    void makeViewBbs(std::array<DrawProjGroupItem*, MAXPROJECTIONCOUNT>& viewPtrs,
+                     std::array<Base::BoundBox3d, MAXPROJECTIONCOUNT>& bboxes,
                      bool scaled = true) const;
 
     /// Helper for calculateAutomaticScale
@@ -172,7 +172,7 @@ protected:
      * Returns a width and height in object-space scale, for the enabled views
      * without accounting for their actual X and Y positions or borders.
      */
-    void getViewArea(DrawProjGroupItem *viewPtrs[10],
+    void getViewArea(std::array<TechDraw::DrawProjGroupItem *, MAXPROJECTIONCOUNT>& viewPtrs,
                         double &width, double &height,
                         bool scaled = true) const;
 
@@ -188,8 +188,13 @@ protected:
     gp_Dir vec2dir(Base::Vector3d v);
 
     void handleChangedPropertyType(Base::XMLReader &reader, const char *TypeName, App::Property * prop) override;
+
+    double getMaxRowHeight(std::array<int, 3> list,
+                           std::array<Base::BoundBox3d, MAXPROJECTIONCOUNT> bboxes);
+    double getMaxColWidth(std::array<int, 3> list,
+                          std::array<Base::BoundBox3d, MAXPROJECTIONCOUNT> bboxes);
 };
 
 } //namespace TechDraw
 
-#endif // _TECHDRAW_FEATUREVIEWGROUP_H_
+#endif // TECHDRAW_FEATUREVIEWGROUP_H_

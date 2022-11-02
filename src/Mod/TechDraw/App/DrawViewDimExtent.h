@@ -20,15 +20,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _TechDraw_DrawViewDimExtent_h_
-#define _TechDraw_DrawViewDimExtent_h_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef TechDraw_DrawViewDimExtent_h_
+#define TechDraw_DrawViewDimExtent_h_
 
 #include <tuple>
 
 #include <App/DocumentObject.h>
 #include <App/PropertyLinks.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
 
 #include "DrawViewDimension.h"
 
@@ -42,7 +41,7 @@ class TechDrawExport DrawViewDimExtent : public TechDraw::DrawViewDimension
 public:
     /// Constructor
     DrawViewDimExtent();
-    ~DrawViewDimExtent() override;
+    ~DrawViewDimExtent() = default;
 
     App::PropertyLinkSubList       Source;                       //DrawViewPart & SubElements(Edges)
                                                                  //Cosmetic End points are stored in DVD::References2d
@@ -55,6 +54,8 @@ public:
     void unsetupObject() override;
 
     bool checkReferences2D() const override;
+    int getRefType() const override { return twoVertex; }
+    pointPair getLinearPoints() override { return getPointsTwoVerts(); }
 
     //return PyObject as DrawViewDimExtentPy
     PyObject *getPyObject() override;

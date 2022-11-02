@@ -27,31 +27,22 @@
 #endif
 
 #include <Base/Exception.h>
-#include <Base/Console.h>
-#include <Base/Interpreter.h>
 #include <Base/FileInfo.h>
-#include <Base/Vector3D.h>
-#include <Base/Tools2D.h>
-
-#include <App/Application.h>
-
-#include "Geometry.h"
-
-#include <iostream>
-#include <iterator>
+#include <Base/Interpreter.h>
 
 #include "DrawParametricTemplate.h"
-#include <Mod/TechDraw/App/DrawParametricTemplatePy.h>
+#include "DrawParametricTemplatePy.h"
+#include "Geometry.h"
+
 
 using namespace TechDraw;
-using namespace std;
 
 PROPERTY_SOURCE(TechDraw::DrawParametricTemplate, TechDraw::DrawTemplate)
 
 DrawParametricTemplate::DrawParametricTemplate()
 {
     static const char *group = "Page";
-    ADD_PROPERTY_TYPE(Template ,(""),group, (App::PropertyType) App::Prop_None,"Template script");
+    ADD_PROPERTY_TYPE(Template ,(""), group, (App::PropertyType) App::Prop_None, "Template script");
 }
 
 DrawParametricTemplate::~DrawParametricTemplate()
@@ -63,7 +54,7 @@ PyObject *DrawParametricTemplate::getPyObject()
 {
     if (PythonObject.is(Py::_None())) {
         // ref counter is set to 1
-        PythonObject = Py::Object(new DrawParametricTemplatePy(this),true);
+        PythonObject = Py::Object(new DrawParametricTemplatePy(this), true);
     }
     return Py::new_reference_to(PythonObject);
 }

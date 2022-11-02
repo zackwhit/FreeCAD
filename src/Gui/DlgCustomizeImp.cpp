@@ -59,17 +59,17 @@ DlgCustomizeImp::DlgCustomizeImp(QWidget* parent, Qt::WindowFlags fl)
 
     customLayout = new QGridLayout( this );
     customLayout->setSpacing( 6 );
-    customLayout->setMargin( 11 );
+    customLayout->setContentsMargins( 11, 11, 11, 11 );
 
     layout = new QHBoxLayout;
     layout->setSpacing( 6 );
-    layout->setMargin( 0 );
+    layout->setContentsMargins( 0, 0, 0, 0 );
 
     buttonHelp = new QPushButton( this );
     buttonHelp->setText(tr("&Help"));
     layout->addWidget( buttonHelp );
 
-    QSpacerItem* spacer = new QSpacerItem( 20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum );
+    auto spacer = new QSpacerItem( 20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum );
     layout->addItem(spacer);
 
     buttonClose = new QPushButton( this );

@@ -23,7 +23,8 @@
 #ifndef GUI_PLACEMENT_H
 #define GUI_PLACEMENT_H
 
-#include <Gui/InputVector.h>
+#include <QDialog>
+#include <Base/Placement.h>
 #include <Gui/SelectionObject.h>
 #include <Gui/TaskView/TaskDialog.h>
 #include <Gui/TaskView/TaskView.h>
@@ -38,7 +39,7 @@ namespace Dialog {
 
 class Ui_Placement;
 class TaskPlacement;
-class GuiExport Placement : public Gui::LocationDialog
+class GuiExport Placement : public QDialog
 {
     Q_OBJECT
 
@@ -48,8 +49,9 @@ public:
     void accept() override;
     void reject() override;
 
+    void setSelection(const std::vector<SelectionObject>&);
     void bindObject();
-    Base::Vector3d getDirection() const override;
+    Base::Vector3d getDirection() const;
     void setPlacement(const Base::Placement&);
     Base::Placement getPlacement() const;
     void showDefaultButtons(bool);
@@ -61,21 +63,27 @@ protected:
 
 private Q_SLOTS:
     void openTransaction();
-    void on_applyButton_clicked();
-    void on_applyIncrementalPlacement_toggled(bool);
+    void onApplyButtonClicked();
+    void onApplyIncrementalPlacementToggled(bool);
     void onPlacementChanged(int);
-    void on_resetButton_clicked();
-    void on_centerOfMass_toggled(bool);
-    void on_selectedVertex_clicked();
-    void on_applyAxial_clicked();
+    void onResetButtonClicked();
+    void onCenterOfMassToggled(bool);
+    void onSelectedVertexClicked();
+    void onApplyAxialClicked();
 
 private:
+    void setupUi();
+    void setupConnections();
+    void setupUnits();
+    void setupSignalMapper();
+    void setupDocument();
+    void setupRotationMethod();
+
     bool onApply();
     void setPlacementData(const Base::Placement&);
     Base::Placement getPlacementData() const;
     Base::Vector3d getCenterData() const;
     QString getPlacementString() const;
-    void directionActivated(int) override;
     void applyPlacement(const Base::Placement& p, bool incremental);
     void applyPlacement(const QString& p, bool incremental);
     void revertTransformation();
@@ -84,12 +92,10 @@ private:
 
 Q_SIGNALS:
     void placementChanged(const QVariant &, bool, bool);
-    void directionChanged();
 
 private:
-    using Ui_PlacementComp = Gui::LocationUi<Ui_Placement>;
     using Connection = boost::signals2::connection;
-    Ui_PlacementComp* ui;
+    Ui_Placement* ui;
     QSignalMapper* signalMapper;
     Connection connectAct;
     Base::Placement ref;
@@ -132,6 +138,7 @@ public:
 public:
     void setPropertyName(const QString&);
     void setPlacement(const Base::Placement&);
+    void setSelection(const std::vector<SelectionObject>&);
     void bindObject();
     bool accept() override;
     bool reject() override;

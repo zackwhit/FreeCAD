@@ -40,12 +40,12 @@ import addonmanager_utilities as utils
 from addonmanager_macro import Macro
 from Addon import Addon
 import NetworkManager
-from addonmanager_git import initialize_git
+from addonmanager_git import initialize_git, GitFailed
 
 translate = FreeCAD.Qt.translate
 
 # Workers only have one public method by design
-# pylint: disable=too-few-public-methods
+# pylint: disable=c-extension-no-member,too-few-public-methods,too-many-instance-attributes
 
 
 class CreateAddonListWorker(QtCore.QThread):
@@ -174,7 +174,15 @@ class CreateAddonListWorker(QtCore.QThread):
                 name = addon["url"].split("/")[-1]
                 if name in self.package_names:
                     # We already have something with this name, skip this one
+                    FreeCAD.Console.PrintWarning(
+                        translate(
+                            "AddonsInstaller", "WARNING: Duplicate addon {} ignored"
+                        ).format(name)
+                    )
                     continue
+                FreeCAD.Console.PrintLog(
+                    f"Adding custom location {addon['url']} with branch {addon['branch']}\n"
+                )
                 self.package_names.append(name)
                 addondir = os.path.join(self.moddir, name)
                 if os.path.exists(addondir) and os.listdir(addondir):
@@ -331,6 +339,9 @@ class CreateAddonListWorker(QtCore.QThread):
                 + "\n"
             )
             try:
+                os.chdir(
+                    os.path.join(macro_cache_location, "..")
+                )  # Make sure we are not IN this directory
                 shutil.rmtree(macro_cache_location, onerror=self._remove_readonly)
                 self.git_manager.clone(
                     "https://github.com/FreeCAD/FreeCAD-macros.git",
@@ -448,10 +459,11 @@ class LoadPackagesFromCacheWorker(QtCore.QThread):
                             repo.updated_timestamp = os.path.getmtime(
                                 repo_metadata_cache_path
                             )
-                        except Exception:
+                        except Exception as e:
                             FreeCAD.Console.PrintLog(
                                 f"Failed loading {repo_metadata_cache_path}\n"
                             )
+                            FreeCAD.Console.PrintLog(str(e) + "\n")
                     self.addon_repo.emit(repo)
 
 

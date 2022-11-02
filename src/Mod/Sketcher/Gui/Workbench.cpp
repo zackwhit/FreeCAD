@@ -165,8 +165,7 @@ inline void SketcherAddWorkspaceSketchExtra<Gui::ToolBarItem>(Gui::ToolBarItem& 
     sketch  << "Sketcher_ReorientSketch"
             << "Sketcher_ValidateSketch"
             << "Sketcher_MergeSketches"
-            << "Sketcher_MirrorSketch"
-            << "Sketcher_StopOperation";
+            << "Sketcher_MirrorSketch";
 }
 
 template <typename T>
@@ -344,7 +343,7 @@ inline void SketcherAddWorkbenchConstraints<Gui::ToolBarItem>(Gui::ToolBarItem& 
             << "Sketcher_ConstrainDistance"
             << "Sketcher_CompConstrainRadDia"
             << "Sketcher_ConstrainAngle"
-            << "Sketcher_ConstrainSnellsLaw"
+            // << "Sketcher_ConstrainSnellsLaw" // Rarely used, show only in menu
             // << "Sketcher_ConstrainInternalAlignment" // This constrain is never used by the user - Do not use precious toolbar space
             << "Separator"
             << "Sketcher_ToggleDrivingConstraint"
@@ -382,11 +381,11 @@ inline void SketcherAddWorkbenchTools<Gui::MenuItem>(Gui::MenuItem& consaccel)
 template <>
 inline void SketcherAddWorkbenchTools<Gui::ToolBarItem>(Gui::ToolBarItem& consaccel)
 {
-    consaccel   << "Sketcher_SelectElementsWithDoFs"
+    consaccel   //<< "Sketcher_SelectElementsWithDoFs" //rarely used, it is usually accessed by solver message.
                 << "Sketcher_SelectConstraints"
                 << "Sketcher_SelectElementsAssociatedWithConstraints"
-                << "Sketcher_SelectRedundantConstraints"
-                << "Sketcher_SelectConflictingConstraints"
+                //<< "Sketcher_SelectRedundantConstraints" //rarely used, it is usually accessed by solver message.
+                //<< "Sketcher_SelectConflictingConstraints"
                 << "Sketcher_RestoreInternalAlignmentGeometry"
                 << "Sketcher_Symmetry"
                 << "Sketcher_CompCopy"

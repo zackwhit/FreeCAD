@@ -72,10 +72,10 @@ PythonEditor::PythonEditor(QWidget* parent)
     this->setSyntaxHighlighter(new PythonSyntaxHighlighter(this));
 
     // set acelerators
-    QShortcut* comment = new QShortcut(this);
+    auto comment = new QShortcut(this);
     comment->setKey(QKeySequence(QString::fromLatin1("ALT+C")));
 
-    QShortcut* uncomment = new QShortcut(this);
+    auto uncomment = new QShortcut(this);
     uncomment->setKey(QKeySequence(QString::fromLatin1("ALT+U")));
 
     connect(comment, SIGNAL(activated()),
@@ -87,7 +87,6 @@ PythonEditor::PythonEditor(QWidget* parent)
 /** Destroys the object and frees any allocated resources */
 PythonEditor::~PythonEditor()
 {
-    getWindowParameter()->Detach( this );
     delete d;
 }
 

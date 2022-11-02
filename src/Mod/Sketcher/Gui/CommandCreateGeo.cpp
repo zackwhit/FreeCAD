@@ -47,7 +47,6 @@
 #include <Gui/Document.h>
 #include <Gui/CommandT.h>
 #include <Gui/MainWindow.h>
-#include <Gui/DlgEditFileIncludePropertyExternal.h>
 #include <Gui/Selection.h>
 #include <Gui/SelectionFilter.h>
 #include <Mod/Sketcher/App/SketchObject.h>
@@ -1252,7 +1251,7 @@ CmdSketcherCreatePointFillet::CmdSketcherCreatePointFillet()
     sToolTipText    = QT_TR_NOOP("Fillet that preserves intersection point and most constraints");
     sWhatsThis      = "Sketcher_CreatePointFillet";
     sStatusTip      = sToolTipText;
-    sPixmap         = "Sketcher_CreateFillet";
+    sPixmap         = "Sketcher_CreatePointFillet";
     sAccel          = "G, F, P";
     eType           = ForEdit;
 }

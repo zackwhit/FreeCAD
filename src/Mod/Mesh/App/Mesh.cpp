@@ -140,10 +140,10 @@ void MeshObject::getFacesFromSubElement(const Data::Segment* element,
         const MeshSegment* segm = static_cast<const MeshSegment*>(element);
         if (segm->segment) {
             Base::Reference<MeshObject> submesh(segm->mesh->meshFromSegment(segm->segment->getIndices()));
-            submesh->getFaces(points, faces, 0.0f);
+            submesh->getFaces(points, faces, 0.0);
         }
         else {
-            segm->mesh->getFaces(points, faces, 0.0f);
+            segm->mesh->getFaces(points, faces, 0.0);
         }
     }
 }
@@ -309,7 +309,7 @@ MeshPoint MeshObject::getMeshPoint(PointIndex index) const
 
 void MeshObject::getPoints(std::vector<Base::Vector3d> &Points,
                            std::vector<Base::Vector3d> &Normals,
-                           float /*Accuracy*/, uint16_t /*flags*/) const
+                           double /*Accuracy*/, uint16_t /*flags*/) const
 {
     Points = transformPointsToOutside(_kernel.GetPoints());
     MeshCore::MeshRefNormalToPoints ptNormals(_kernel);
@@ -323,7 +323,7 @@ Mesh::Facet MeshObject::getMeshFacet(FacetIndex index) const
 }
 
 void MeshObject::getFaces(std::vector<Base::Vector3d> &Points,std::vector<Facet> &Topo,
-                          float /*Accuracy*/, uint16_t /*flags*/) const
+                          double /*Accuracy*/, uint16_t /*flags*/) const
 {
     unsigned long ctpoints = _kernel.CountPoints();
     Points.reserve(ctpoints);
@@ -394,21 +394,7 @@ void MeshObject::save(const char* file, MeshCore::MeshIO::Format f,
     }
 
     aWriter.Transform(this->_Mtrx);
-    if (aWriter.SaveAny(file, f)) {
-        if (mat && mat->binding == MeshCore::MeshIO::PER_FACE) {
-            if (f == MeshCore::MeshIO::Undefined)
-                f = MeshCore::MeshOutput::GetFormat(file);
-
-            if (f == MeshCore::MeshIO::OBJ) {
-                Base::FileInfo fi(file);
-                std::string fn = fi.dirPath() + "/" + mat->library;
-                fi.setFile(fn);
-                Base::ofstream str(fi, std::ios::out | std::ios::binary);
-                aWriter.SaveMTL(str);
-                str.close();
-            }
-        }
-    }
+    aWriter.SaveAny(file, f);
 }
 
 void MeshObject::save(std::ostream& str, MeshCore::MeshIO::Format f,
@@ -444,20 +430,6 @@ bool MeshObject::load(const char* file, MeshCore::Material* mat)
         return false;
 
     swapKernel(kernel, aReader.GetGroupNames());
-
-    if (mat && mat->binding == MeshCore::MeshIO::PER_FACE) {
-        MeshCore::MeshIO::Format format = MeshCore::MeshOutput::GetFormat(file);
-
-        if (format == MeshCore::MeshIO::OBJ) {
-            Base::FileInfo fi(file);
-            std::string fn = fi.dirPath() + "/" + mat->library;
-            fi.setFile(fn);
-            Base::ifstream str(fi, std::ios::in | std::ios::binary);
-            aReader.LoadMTL(str);
-            str.close();
-        }
-    }
-
     return true;
 }
 

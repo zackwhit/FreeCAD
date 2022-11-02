@@ -23,43 +23,21 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# include <sstream>
-# include <cstring>
 # include <cstdlib>
-# include <exception>
-# include <QString>
-# include <QStringList>
-# include <QRegExp>
-#include <BRepBuilderAPI_MakeVertex.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepExtrema_DistShapeShape.hxx>
-#include <gp_Pnt.hxx>
-#include <TopoDS_Shape.hxx>
-#include <TopoDS_Edge.hxx>
+# include <cstring>
+# include <sstream>
+# include <Precision.hxx>
 #endif
 
-#include <QLocale>
-
 #include <App/Application.h>
-#include <Base/Console.h>
-#include <Base/Exception.h>
 #include <Base/Parameter.h>
-#include <Base/Quantity.h>
-#include <Base/Tools.h>
-#include <Base/UnitsApi.h>
-
 #include <Mod/Measure/App/Measurement.h>
 
-#include "Preferences.h"
-#include "Geometry.h"
-#include "DrawViewPart.h"
 #include "DrawViewBalloon.h"
-#include "DrawUtil.h"
-#include "LineGroup.h"
 #include "ArrowPropEnum.h"
+#include "DrawViewPart.h"
+#include "Preferences.h"
 
-
-//#include <Mod/TechDraw/App/DrawViewBalloonPy.h>  // generated from DrawViewBalloonPy.xml
 
 using namespace TechDraw;
 
@@ -71,7 +49,7 @@ App::PropertyFloatConstraint::Constraints DrawViewBalloon::SymbolScaleRange = { 
 // DrawViewBalloon
 //===========================================================================
 // Balloon coordinates are relative to the position of the SourceView
-// X,Y is the center of the balloon bubble
+// X, Y is the center of the balloon bubble
 // OriginX, OriginY is the tip of the arrow
 // these are in unscaled SourceView coordinates
 // Note that if the SourceView coordinate system changes
@@ -100,7 +78,7 @@ DrawViewBalloon::DrawViewBalloon()
     EndType.setEnums(ArrowPropEnum::ArrowTypeEnums);
     ADD_PROPERTY_TYPE(EndType, (prefEnd()), "", (App::PropertyType)(App::Prop_None), "End symbol for the balloon line");
 
-    ADD_PROPERTY_TYPE(EndTypeScale, (1.0), "", (App::PropertyType)(App::Prop_None),"End symbol scale factor");
+    ADD_PROPERTY_TYPE(EndTypeScale, (1.0), "", (App::PropertyType)(App::Prop_None), "End symbol scale factor");
     EndTypeScale.setConstraints(&SymbolScaleRange);
 
     BubbleShape.setEnums(balloonTypeEnums);
@@ -115,8 +93,8 @@ DrawViewBalloon::DrawViewBalloon()
                                   "Distance from symbol to leader kink");
 
     SourceView.setScope(App::LinkScope::Global);
-    Rotation.setStatus(App::Property::Hidden,true);
-    Caption.setStatus(App::Property::Hidden,true);
+    Rotation.setStatus(App::Property::Hidden, true);
+    Caption.setStatus(App::Property::Hidden, true);
 }
 
 DrawViewBalloon::~DrawViewBalloon()
@@ -168,13 +146,13 @@ void DrawViewBalloon::handleChangedPropertyType(Base::XMLReader &reader, const c
     DrawView::handleChangedPropertyType(reader, TypeName, prop);
 
     // property OriginX had the App::PropertyFloat and was changed to App::PropertyDistance
-    if ( (prop == &OriginX) && 
+    if ( (prop == &OriginX) &&
          (strcmp(TypeName, "App::PropertyFloat") == 0) )  {
         App::PropertyFloat OriginXProperty;
         // restore the PropertyFloat to be able to set its value
         OriginXProperty.Restore(reader);
         OriginX.setValue(OriginXProperty.getValue());
-    } else if ( (prop == &OriginX) && 
+    } else if ( (prop == &OriginX) &&
                 (strcmp(TypeName, "App::PropertyLength") == 0) )  {
         App::PropertyLength OriginXProperty;
         // restore the PropertyFloat to be able to set its value
@@ -182,13 +160,13 @@ void DrawViewBalloon::handleChangedPropertyType(Base::XMLReader &reader, const c
         OriginX.setValue(OriginXProperty.getValue());
 
     // property OriginY had the App::PropertyFloat and was changed to App::PropertyDistance
-    } else if ( (prop == &OriginY) && 
+    } else if ( (prop == &OriginY) &&
                 (strcmp(TypeName, "App::PropertyFloat") == 0) )  {
         App::PropertyFloat OriginYProperty;
         // restore the PropertyFloat to be able to set its value
         OriginYProperty.Restore(reader);
         OriginY.setValue(OriginYProperty.getValue());
-    } else if ( (prop == &OriginY) && 
+    } else if ( (prop == &OriginY) &&
                 (strcmp(TypeName, "App::PropertyLength") == 0) )  {
         App::PropertyLength OriginYProperty;
         // restore the PropertyLength to be able to set its value
@@ -298,7 +276,7 @@ PyObject *DrawViewBalloon::getPyObject(void)
 {
     if (PythonObject.is(Py::_None())) {
         // ref counter is set to 1
-        PythonObject = Py::Object(new DrawViewBalloonPy(this),true);
+        PythonObject = Py::Object(new DrawViewBalloonPy(this), true);
     }
     return Py::new_reference_to(PythonObject);
 }

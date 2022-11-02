@@ -20,17 +20,16 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _DrawPage_h_
-#define _DrawPage_h_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef DrawPage_h_
+#define DrawPage_h_
 
 #include <boost_signals2.hpp>
 
 #include <App/DocumentObject.h>
 #include <App/PropertyStandard.h>
-#include <Mod/TechDraw/App/DrawViewPart.h>
-#include <Mod/TechDraw/App/DrawViewSpreadsheet.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
+
+#include "DrawViewPart.h"
 
 
 namespace TechDraw
@@ -50,7 +49,7 @@ public:
 
     App::PropertyFloatConstraint Scale;
     App::PropertyEnumeration ProjectionType; // First or Third Angle
-    
+
     App::PropertyInteger  NextBalloonIndex;
 
     /** @name methods override Feature */
@@ -91,13 +90,14 @@ public:
      */
     double getPageHeight() const;
     const char* getPageOrientation() const;
+    int getOrientation() const;
     bool isUnsetting() { return nowUnsetting; }
     void requestPaint();
     std::vector<App::DocumentObject*> getAllViews() ;
-    DrawViewPart *balloonParent;    //could be many balloons on page? 
-    
+    DrawViewPart *balloonParent;    //could be many balloons on page?
+
     int getNextBalloonIndex();
-    
+
     void updateAllViews();
     static bool GlobalUpdateDrawings();
     static bool AllowPageOverride();

@@ -23,6 +23,9 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <limits>
+# include <unordered_map>
+# include <list>
+# include <QApplication>
 # include <QDir>
 # include <QIcon>
 # include <QWidget>
@@ -121,6 +124,7 @@ PyTypeObject** SbkPySide2_QtWidgetsTypes=nullptr;
 #endif
 
 #include <App/Application.h>
+#include <Base/Interpreter.h>
 #include <Base/Quantity.h>
 #include <Base/QuantityPy.h>
 
@@ -149,7 +153,7 @@ PyObject* toPythonFuncQuantityTyped(Base::Quantity cpx) {
 
 PyObject* toPythonFuncQuantity(const void* cpp)
 {
-    return toPythonFuncQuantityTyped(*reinterpret_cast<const Base::Quantity*>(cpp));
+    return toPythonFuncQuantityTyped(*static_cast<const Base::Quantity*>(cpp));
 }
 
 void toCppPointerConvFuncQuantity(PyObject* pyobj,void* cpp)
@@ -181,7 +185,7 @@ PythonToCppFunc isBaseQuantity_PythonToCpp_QVariantConvertible(PyObject* obj)
 #if defined (HAVE_PYSIDE)
 Base::Quantity convertWrapperToQuantity(const PySide::PyObjectWrapper &w)
 {
-    PyObject* pyIn = static_cast<PyObject*>(w);
+    auto pyIn = static_cast<PyObject*>(w);
     if (PyObject_TypeCheck(pyIn, &(Base::QuantityPy::Type))) {
         return *static_cast<Base::QuantityPy*>(pyIn)->getQuantityPtr();
     }
@@ -217,6 +221,86 @@ void registerTypes()
 // --------------------------------------------------------
 
 namespace Gui {
+
+/*!
+ * \brief The WrapperManager class
+ * This is a helper class that records the Python wrappers of a QObject and invalidates
+ * them when the QObject is about to be destroyed.
+ * This is to make sure that if the Python wrapper doesn't own the QObject it won't be notified
+ * if the QObject is destroyed.
+ * \code
+ * ui = Gui.UiLoader()
+ * lineedit = ui.createWidget("QLineEdit")
+ * lineedit.deleteLater()
+ * # Make sure this won't crash
+ * lineedit.show()
+ * \endcode
+ */
+class WrapperManager : public QObject
+{
+    std::unordered_map<QObject*, std::list<Py::Object>> wrappers;
+
+public:
+    static WrapperManager& instance()
+    {
+        static WrapperManager singleton;
+        return singleton;
+    }
+    /*!
+     * \brief addQObject
+     * \param obj
+     * \param pyobj
+     * Add the QObject and its Python wrapper to the list.
+     */
+    void addQObject(QObject* obj, PyObject* pyobj)
+    {
+        if (wrappers.find(obj) == wrappers.end()) {
+            QObject::connect(obj, &QObject::destroyed, this, &WrapperManager::destroyed);
+        }
+
+        auto& pylist = wrappers[obj];
+        if (std::find_if(pylist.cbegin(), pylist.cend(), [pyobj](const Py::Object& py) { return py.ptr() == pyobj; }) == pylist.end()) {
+            pylist.emplace_back(pyobj);
+        }
+    }
+
+private:
+    /*!
+     * \brief destroyed
+     * \param obj
+     * The listed QObject is about to be destroyed. Invalidate its Python wrappers now.
+     */
+    void destroyed(QObject* obj = nullptr)
+    {
+        if (obj) {
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+            auto key = wrappers.find(obj);
+            if (key != wrappers.end()) {
+                Base::PyGILStateLocker lock;
+                for (const auto& it : key->second) {
+                    auto value = it.ptr();
+                    Shiboken::Object::setValidCpp(reinterpret_cast<SbkObject*>(value), false);
+                }
+
+                wrappers.erase(key);
+            }
+#endif
+        }
+    }
+    void clear()
+    {
+        Base::PyGILStateLocker lock;
+        wrappers.clear();
+    }
+
+    WrapperManager()
+    {
+        connect(QApplication::instance(), &QCoreApplication::aboutToQuit,
+                this, &WrapperManager::clear);
+    }
+    ~WrapperManager() = default;
+};
+
 template<typename qttype>
 Py::Object qt_wrapInstance(qttype object, const char* className,
                            const char* shiboken, const char* pyside,
@@ -351,21 +435,21 @@ QObject* PythonWrapper::toQObject(const Py::Object& pyobject)
     PyTypeObject * type = getPyTypeObjectForTypeName<QObject>();
     if (type) {
         if (Shiboken::Object::checkType(pyobject.ptr())) {
-            SbkObject* sbkobject = reinterpret_cast<SbkObject *>(pyobject.ptr());
+            auto sbkobject = reinterpret_cast<SbkObject *>(pyobject.ptr());
             void* cppobject = Shiboken::Object::cppPointer(sbkobject, type);
-            return reinterpret_cast<QObject*>(cppobject);
+            return static_cast<QObject*>(cppobject);
         }
     }
 #else
     // Access shiboken2/PySide2 via Python
     //
     void* ptr = qt_getCppPointer(pyobject, "shiboken2", "getCppPointer");
-    return reinterpret_cast<QObject*>(ptr);
+    return static_cast<QObject*>(ptr);
 #endif
 
 #ifdef HAVE_PYQT // Unwrapping using sip/PyQt
     void* ptr = qt_getCppPointer(pyobject, "sip", "unwrapinstance");
-    return reinterpret_cast<QObject*>(ptr);
+    return static_cast<QObject*>(ptr);
 #endif
 
     return nullptr;
@@ -377,16 +461,16 @@ QGraphicsItem* PythonWrapper::toQGraphicsItem(PyObject* pyPtr)
     PyTypeObject* type = getPyTypeObjectForTypeName<QGraphicsItem>();
     if (type) {
         if (Shiboken::Object::checkType(pyPtr)) {
-            SbkObject* sbkobject = reinterpret_cast<SbkObject*>(pyPtr);
+            auto sbkobject = reinterpret_cast<SbkObject*>(pyPtr);
             void* cppobject = Shiboken::Object::cppPointer(sbkobject, type);
-            return reinterpret_cast<QGraphicsItem*>(cppobject);
+            return static_cast<QGraphicsItem*>(cppobject);
         }
     }
 #else
     // Access shiboken2/PySide2 via Python
     //
     void* ptr = qt_getCppPointer(Py::asObject(pyPtr), "shiboken2", "getCppPointer");
-    return reinterpret_cast<QGraphicsItem*>(ptr);
+    return static_cast<QGraphicsItem*>(ptr);
 #endif
     return nullptr;
 }
@@ -397,7 +481,7 @@ QGraphicsObject* PythonWrapper::toQGraphicsObject(PyObject* pyPtr)
     PyTypeObject* type = getPyTypeObjectForTypeName<QGraphicsObject>();
     if (type) {
         if (Shiboken::Object::checkType(pyPtr)) {
-            SbkObject* sbkobject = reinterpret_cast<SbkObject*>(pyPtr);
+            auto sbkobject = reinterpret_cast<SbkObject*>(pyPtr);
             void* cppobject = Shiboken::Object::cppPointer(sbkobject, type);
             return reinterpret_cast<QGraphicsObject*>(cppobject);
         }
@@ -433,9 +517,9 @@ QIcon *PythonWrapper::toQIcon(PyObject *pyobj)
     PyTypeObject * type = getPyTypeObjectForTypeName<QIcon>();
     if(type) {
         if (Shiboken::Object::checkType(pyobj)) {
-            SbkObject* sbkobject = reinterpret_cast<SbkObject *>(pyobj);
+            auto sbkobject = reinterpret_cast<SbkObject *>(pyobj);
             void* cppobject = Shiboken::Object::cppPointer(sbkobject, type);
-            return reinterpret_cast<QIcon*>(cppobject);
+            return static_cast<QIcon*>(cppobject);
         }
     }
 #else
@@ -464,9 +548,9 @@ QDir* PythonWrapper::toQDir(PyObject* pyobj)
     PyTypeObject* type = getPyTypeObjectForTypeName<QDir>();
     if (type) {
         if (Shiboken::Object::checkType(pyobj)) {
-            SbkObject* sbkobject = reinterpret_cast<SbkObject*>(pyobj);
+            auto sbkobject = reinterpret_cast<SbkObject*>(pyobj);
             void* cppobject = Shiboken::Object::cppPointer(sbkobject, type);
-            return reinterpret_cast<QDir*>(cppobject);
+            return static_cast<QDir*>(cppobject);
         }
     }
 #else
@@ -484,13 +568,14 @@ Py::Object PythonWrapper::fromQObject(QObject* object, const char* className)
     //
     PyTypeObject * type = getPyTypeObjectForTypeName<QObject>();
     if (type) {
-        SbkObjectType* sbk_type = reinterpret_cast<SbkObjectType*>(type);
+        auto sbk_type = reinterpret_cast<SbkObjectType*>(type);
         std::string typeName;
         if (className)
             typeName = className;
         else
             typeName = object->metaObject()->className();
         PyObject* pyobj = Shiboken::Object::newObject(sbk_type, object, false, false, typeName.c_str());
+        WrapperManager::instance().addQObject(object, pyobj);
         return Py::asObject(pyobj);
     }
     throw Py::RuntimeError("Failed to wrap object");
@@ -512,13 +597,14 @@ Py::Object PythonWrapper::fromQWidget(QWidget* widget, const char* className)
     //
     PyTypeObject * type = getPyTypeObjectForTypeName<QWidget>();
     if (type) {
-        SbkObjectType* sbk_type = reinterpret_cast<SbkObjectType*>(type);
+        auto sbk_type = reinterpret_cast<SbkObjectType*>(type);
         std::string typeName;
         if (className)
             typeName = className;
         else
             typeName = widget->metaObject()->className();
         PyObject* pyobj = Shiboken::Object::newObject(sbk_type, widget, false, false, typeName.c_str());
+        WrapperManager::instance().addQObject(widget, pyobj);
         return Py::asObject(pyobj);
     }
     throw Py::RuntimeError("Failed to wrap widget");

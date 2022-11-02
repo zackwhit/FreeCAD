@@ -20,30 +20,25 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
 # include <sstream>
+# include <QDomDocument>
+# include "QDomNodeModel.h"
+# include <QXmlQuery>
+# include <QXmlResultItems>
 #endif
 
-#include <QDomDocument>
-#include <QXmlQuery>
-#include "QDomNodeModel.h"
-
-#include <Base/Exception.h>
-#include <Base/FileInfo.h>
 #include <Base/Console.h>
-#include <Base/Tools.h>
 
-#include "DrawUtil.h"
-#include "DrawPage.h"
 #include "DrawViewSymbol.h"
+#include "DrawViewSymbolPy.h"  // generated from DrawViewSymbolPy.xml
+#include "DrawPage.h"
+#include "DrawUtil.h"
 
-#include <Mod/TechDraw/App/DrawViewSymbolPy.h>  // generated from DrawViewSymbolPy.xml
 
 using namespace TechDraw;
-using namespace std;
 
 //===========================================================================
 // DrawViewSymbol
@@ -56,10 +51,10 @@ DrawViewSymbol::DrawViewSymbol()
 {
     static const char *vgroup = "Drawing view";
 
-    ADD_PROPERTY_TYPE(Symbol,(""),vgroup,App::Prop_None,"The SVG code defining this symbol");
-    ADD_PROPERTY_TYPE(EditableTexts,(""),vgroup,App::Prop_None,"Substitution values for the editable strings in this symbol");
+    ADD_PROPERTY_TYPE(Symbol, (""), vgroup, App::Prop_None, "The SVG code defining this symbol");
+    ADD_PROPERTY_TYPE(EditableTexts, (""), vgroup, App::Prop_None, "Substitution values for the editable strings in this symbol");
     ScaleType.setValue("Custom");
-    Symbol.setStatus(App::Property::Hidden,true);
+    Symbol.setStatus(App::Property::Hidden, true);
 }
 
 DrawViewSymbol::~DrawViewSymbol()
@@ -94,7 +89,7 @@ QRectF DrawViewSymbol::getRect() const
 {
         double w = 64.0;         //must default to something
         double h = 64.0;
-        return (QRectF(0,0,w,h));
+        return (QRectF(0, 0,w, h));
 }
 
 //!Assume all svg files fit the page and/or the user will scale manually
@@ -209,7 +204,7 @@ PyObject *DrawViewSymbol::getPyObject()
 {
     if (PythonObject.is(Py::_None())) {
         // ref counter is set to 1
-        PythonObject = Py::Object(new DrawViewSymbolPy(this),true);
+        PythonObject = Py::Object(new DrawViewSymbolPy(this), true);
     }
     return Py::new_reference_to(PythonObject);
 }

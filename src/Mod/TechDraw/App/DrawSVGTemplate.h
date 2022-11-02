@@ -20,13 +20,12 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _TECHDRAW_DrawSVGTemplate_h_
-#define _TECHDRAW_DrawSVGTemplate_h_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef TECHDRAW_DrawSVGTemplate_h_
+#define TECHDRAW_DrawSVGTemplate_h_
 
 #include <App/FeaturePython.h>
 #include <App/PropertyFile.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
 
 #include "DrawTemplate.h"
 
@@ -81,4 +80,4 @@ using DrawSVGTemplatePython = App::FeaturePythonT<DrawSVGTemplate>;
 
 } //namespace TechDraw
 
-#endif //_TECHDRAW_DrawSVGTemplate_h_
+#endif //TECHDRAW_DrawSVGTemplate_h_

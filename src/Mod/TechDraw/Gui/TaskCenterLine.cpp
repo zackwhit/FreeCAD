@@ -22,20 +22,9 @@
 
 #include "PreCompiled.h"
 
-#ifndef _PreComp_
-#include <cmath>
-#include <BRepBndLib.hxx>
-#include <Bnd_Box.hxx>
-#include <QButtonGroup>
-#include <QStatusBar>
-#include <QGraphicsScene>
-#endif // #ifndef _PreComp_
-
-
 #include <Base/Console.h>
 #include <Base/Tools.h>
 #include <Base/UnitsApi.h>
-
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
@@ -45,26 +34,20 @@
 #include <Gui/Selection.h>
 #include <Gui/ViewProvider.h>
 #include <Gui/WaitCursor.h>
-
+#include <Mod/TechDraw/App/Cosmetic.h>
 #include <Mod/TechDraw/App/DrawPage.h>
 #include <Mod/TechDraw/App/DrawUtil.h>
 #include <Mod/TechDraw/App/DrawView.h>
 #include <Mod/TechDraw/App/DrawViewPart.h>
 #include <Mod/TechDraw/App/Geometry.h>
-#include <Mod/TechDraw/App/Cosmetic.h>
-
-#include <Mod/TechDraw/Gui/ui_TaskCenterLine.h>
-
-#include "PreferencesGui.h"
-#include "QGVPage.h"
-#include "QGIView.h"
-#include "QGIPrimPath.h"
-#include "MDIViewPage.h"
-#include "ViewProviderPage.h"
-#include "ViewProviderViewPart.h"
-#include "Rez.h"
+#include <Mod/TechDraw/App/LineGroup.h>
 
 #include "TaskCenterLine.h"
+#include "ui_TaskCenterLine.h"
+#include "PreferencesGui.h"
+#include "QGIView.h"
+#include "ViewProviderViewPart.h"
+
 
 using namespace Gui;
 using namespace TechDraw;
@@ -154,9 +137,9 @@ void TaskCenterLine::updateTask()
 {
 }
 
-void TaskCenterLine::changeEvent(QEvent *e)
+void TaskCenterLine::changeEvent(QEvent *event)
 {
-    if (e->type() == QEvent::LanguageChange) {
+    if (event->type() == QEvent::LanguageChange) {
         ui->retranslateUi(this);
     }
 }
@@ -207,7 +190,7 @@ void TaskCenterLine::setUiPrimary()
     qAngle.setUnit(Base::Unit::Angle);
     ui->qsbRotate->setValue(qAngle);
     int precision = Base::UnitsApi::getDecimals();
-    ui->qsbRotate->setDecimals(precision); 
+    ui->qsbRotate->setDecimals(precision);
 }
 
 void TaskCenterLine::setUiEdit()
@@ -247,7 +230,7 @@ void TaskCenterLine::setUiEdit()
     ui->qsbRotate->setValue(qAngle);
     int precision = Base::UnitsApi::getDecimals();
     ui->qsbRotate->setDecimals(precision);
-    ui->qsbRotate->setValue(m_cl->m_rotate);  
+    ui->qsbRotate->setValue(m_cl->m_rotate);
 }
 
 void TaskCenterLine::onOrientationChanged()
@@ -418,10 +401,10 @@ void TaskCenterLine::saveButtons(QPushButton* btnOK,
     m_btnCancel = btnCancel;
 }
 
-void TaskCenterLine::enableTaskButtons(bool b)
+void TaskCenterLine::enableTaskButtons(bool isEnabled)
 {
-    m_btnOK->setEnabled(b);
-    m_btnCancel->setEnabled(b);
+    m_btnOK->setEnabled(isEnabled);
+    m_btnCancel->setEnabled(isEnabled);
 }
 
 double TaskCenterLine::getCenterWidth()
@@ -510,7 +493,7 @@ TaskDlgCenterLine::TaskDlgCenterLine(TechDraw::DrawViewPart* partFeat,
                                      bool editMode)
     : TaskDialog()
 {
-    widget  = new TaskCenterLine(partFeat,page,subNames, editMode);
+    widget  = new TaskCenterLine(partFeat, page, subNames, editMode);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/TechDraw_FaceCenterLine"),
                                              widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
@@ -524,7 +507,7 @@ TaskDlgCenterLine::TaskDlgCenterLine(TechDraw::DrawViewPart* partFeat,
                                      bool editMode)
     : TaskDialog()
 {
-    widget  = new TaskCenterLine(partFeat,page, edgeName, editMode);
+    widget  = new TaskCenterLine(partFeat, page, edgeName, editMode);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/TechDraw_FaceCenterLine"),
                                              widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);

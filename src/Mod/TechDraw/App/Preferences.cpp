@@ -30,12 +30,11 @@
 #include <App/Application.h>
 #include <App/Material.h>
 #include <Base/Console.h>
-#include <Base/Exception.h>
 #include <Base/FileInfo.h>
 #include <Base/Parameter.h>
-#include <Base/Vector3D.h>
 
 #include "Preferences.h"
+
 
 //getters for parameters used in multiple places.
 //ensure this is in sync with preference page user interfaces
@@ -133,9 +132,30 @@ double Preferences::vertexScale()
     return result;
 }
 
+int Preferences::scaleType()
+{
+    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
+          .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/General");
+    int result = hGrp->GetInt("DefaultScaleType", 0);
+    return result;
+}
 
+double Preferences::scale()
+{
+    int prefScaleType = scaleType();
+    if (prefScaleType == 0) {       //page scale
+        Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
+              .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/General");
+        return hGrp->GetFloat("DefaultPageScale", 1.0);
+    } else if (prefScaleType == 1) {    //custom scale
+        Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
+              .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/General");
+        return hGrp->GetFloat("DefaultViewScale", 1.0);
+    }
+    return 1.0;
+}
 
-//lightgray #D3D3D3 
+//lightgray #D3D3D3
 
 bool Preferences::keepPagesUpToDate()
 {
@@ -190,7 +210,7 @@ QString Preferences::defaultTemplate()
                                          GetGroup("Mod/TechDraw/Files");
     std::string defaultDir = App::Application::getResourceDir() + "Mod/TechDraw/Templates/";
     std::string defaultFileName = defaultDir + "A4_LandscapeTD.svg";
-    std::string prefFileName = hGrp->GetASCII("TemplateFile",defaultFileName.c_str());
+    std::string prefFileName = hGrp->GetASCII("TemplateFile", defaultFileName.c_str());
     if (prefFileName.empty()) {
         prefFileName = defaultFileName;
     }
@@ -229,7 +249,7 @@ std::string Preferences::lineGroupFile()
                                          GetGroup("Preferences")->GetGroup("Mod/TechDraw/Files");
     std::string defaultDir = App::Application::getResourceDir() + "Mod/TechDraw/LineGroup/";
     std::string defaultFileName = defaultDir + "LineGroup.csv";
-    std::string lgFileName = hGrp->GetASCII("LineGroupFile",defaultFileName.c_str());
+    std::string lgFileName = hGrp->GetASCII("LineGroupFile", defaultFileName.c_str());
     if (lgFileName.empty()) {
         lgFileName = defaultFileName;
     }
@@ -245,7 +265,7 @@ std::string Preferences::formatSpec()
 {
     Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
                                          .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/Dimensions");
-    return hGrp->GetASCII("formatSpec","%.2w");
+    return hGrp->GetASCII("formatSpec", "%.2w");
 }
 
 int Preferences::altDecimals()
@@ -271,7 +291,7 @@ std::string Preferences::svgFile()
 
     std::string defaultDir = App::Application::getResourceDir() + "Mod/TechDraw/Patterns/";
     std::string defaultFileName = defaultDir + "simple.svg";
-    std::string prefHatchFile = hGrp->GetASCII("FileHatch",defaultFileName.c_str());
+    std::string prefHatchFile = hGrp->GetASCII("FileHatch", defaultFileName.c_str());
     if (prefHatchFile.empty()) {
         prefHatchFile = defaultFileName;
     }

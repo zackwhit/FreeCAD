@@ -85,13 +85,13 @@ ViewProviderPage::ViewProviderPage()
     sPixmap = "TechDraw_TreePage";
     static const char *group = "Grid";
 
-    ADD_PROPERTY_TYPE(ShowFrames ,(true),group,App::Prop_None,"Show or hide View frames and Labels on this Page");
-    ADD_PROPERTY_TYPE(ShowGrid ,(PreferencesGui::showGrid()),group,App::Prop_None,"Show or hide a grid on this Page");
+    ADD_PROPERTY_TYPE(ShowFrames ,(true), group, App::Prop_None, "Show or hide View frames and Labels on this Page");
+    ADD_PROPERTY_TYPE(ShowGrid ,(PreferencesGui::showGrid()), group, App::Prop_None, "Show or hide a grid on this Page");
     ADD_PROPERTY_TYPE(GridSpacing, (PreferencesGui::gridSpacing()), group, (App::PropertyType)(App::Prop_None),
                      "Grid line spacing in mm");
 
-    ShowFrames.setStatus(App::Property::Hidden,true);
-    DisplayMode.setStatus(App::Property::Hidden,true);
+    ShowFrames.setStatus(App::Property::Hidden, true);
+    DisplayMode.setStatus(App::Property::Hidden, true);
 
     m_graphicsScene = new QGSPage(this);
     m_graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex); //this prevents crash when deleting dims.
@@ -312,7 +312,7 @@ void ViewProviderPage::createMDIViewPage()
     Gui::Document* doc = Gui::Application::Instance->getDocument
         (pcObject->getDocument());
     m_mdiView = new MDIViewPage(this, doc, Gui::getMainWindow());
-    if (m_graphicsView == nullptr) {
+    if (!m_graphicsView) {
         m_graphicsView = new QGVPage(this, m_graphicsScene, m_mdiView);
         std::string objName = m_pageName + "View";
         m_graphicsView->setObjectName(QString::fromLocal8Bit(objName.c_str()));
@@ -339,9 +339,8 @@ void ViewProviderPage::removeMDIView(void)
             m_mdiView = nullptr;            //m_mdiView will eventually be deleted and
             m_graphicsView = nullptr;       //will take m_graphicsView with it
             Gui::MDIView* aw = Gui::getMainWindow()->activeWindow();  //WF: this bit should be in the remove window logic, not here.
-            if (aw != nullptr) {
+            if (aw)
                 aw->showMaximized();
-            }
         }
     }
 }
@@ -436,7 +435,7 @@ void ViewProviderPage::toggleFrameState()
 
 void ViewProviderPage::setTemplateMarkers(bool state)
 {
-//    Base::Console().Message("VPP::setTemplateMarkers(%d)\n",state);
+//    Base::Console().Message("VPP::setTemplateMarkers(%d)\n", state);
     App::DocumentObject *templateFeat = nullptr;
     templateFeat = getDrawPage()->Template.getValue();
     Gui::Document* guiDoc = Gui::Application::Instance->getDocument(templateFeat->getDocument());

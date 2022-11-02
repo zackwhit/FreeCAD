@@ -22,7 +22,7 @@
 
 """ Worker thread classes for Addon Manager installation and removal """
 
-# pylint: disable=c-extension-no-member,too-few-public-methods
+# pylint: disable=c-extension-no-member,too-few-public-methods,too-many-instance-attributes
 
 import io
 import os
@@ -147,20 +147,19 @@ class InstallWorkbenchWorker(QtCore.QThread):
         will revert to a clean clone."""
         self.status_message.emit("Updating module...")
         with self.repo.git_lock:
-            if not os.path.exists(clonedir + os.sep + ".git"):
+            if not os.path.exists(os.path.join(clonedir, ".git")):
                 self.git_manager.repair(self.repo.url, clonedir)
             try:
                 self.git_manager.update(clonedir)
                 if self.repo.contains_workbench():
-                    # pylint: disable=line-too-long
                     answer = translate(
                         "AddonsInstaller",
-                        "Workbench successfully updated. Please restart FreeCAD to apply the changes.",
+                        "Addon successfully updated. Please restart FreeCAD to apply the changes.",
                     )
                 else:
                     answer = translate(
                         "AddonsInstaller",
-                        "Workbench successfully updated.",
+                        "Addon successfully updated.",
                     )
             except GitFailed as e:
                 answer = (
@@ -206,7 +205,7 @@ class InstallWorkbenchWorker(QtCore.QThread):
         if self.repo.contains_workbench():
             answer = translate(
                 "AddonsInstaller",
-                "Workbench successfully installed. Please restart FreeCAD to apply the changes.",
+                "Addon successfully installed. Please restart FreeCAD to apply the changes.",
             )
         else:
             answer = translate(
@@ -378,7 +377,7 @@ class DependencyInstallationWorker(QtCore.QThread):
     def __init__(
         self,
         addons: List[Addon],
-        python_required: List[str],
+        python_requires: List[str],
         python_optional: List[str],
         location: os.PathLike = None,
     ):
@@ -388,7 +387,7 @@ class DependencyInstallationWorker(QtCore.QThread):
         for testing purposes and shouldn't be set by normal code in most circumstances."""
         QtCore.QThread.__init__(self)
         self.addons = addons
-        self.python_required = python_required
+        self.python_requires = python_requires
         self.python_optional = python_optional
         self.location = location
 
@@ -396,7 +395,7 @@ class DependencyInstallationWorker(QtCore.QThread):
         """Normally not called directly: create the object and call start() to launch it
         in its own thread. Installs dependencies for the Addon."""
         self._install_required_addons()
-        if self.python_required or self.python_optional:
+        if self.python_requires or self.python_optional:
             self._install_python_packages()
         self.success.emit()
 
@@ -445,57 +444,63 @@ class DependencyInstallationWorker(QtCore.QThread):
                 proc = subprocess.run(
                     [python_exe, "-m", "pip", "--version"],
                     stdout=subprocess.PIPE,
+                    timeout=30,
                     check=True,
                 )
             except subprocess.CalledProcessError:
-                pip_failed = True
-            if proc.returncode != 0:
                 pip_failed = True
         else:
             pip_failed = True
         if pip_failed:
             self.no_pip.emit(f"{python_exe} -m pip --version")
-        FreeCAD.Console.PrintMessage(proc.stdout)
-        FreeCAD.Console.PrintWarning(proc.stderr)
-        result = proc.stdout
-        FreeCAD.Console.PrintMessage(result.decode())
+        if proc:
+            FreeCAD.Console.PrintMessage(proc.stdout)
+            FreeCAD.Console.PrintWarning(proc.stderr)
+            result = proc.stdout
+            FreeCAD.Console.PrintMessage(result.decode())
         return not pip_failed
 
     def _install_required(self, vendor_path: os.PathLike):
         """Install the required Python package dependencies. If any fail a failure signal is
         emitted and the function exits without proceeding with any additional installs."""
-        for pymod in self.python_required:
+        python_exe = utils.get_python_exe()
+        for pymod in self.python_requires:
             if QtCore.QThread.currentThread().isInterruptionRequested():
                 return
-            proc = subprocess.run(
-                [
-                    python_exe,
-                    "-m",
-                    "pip",
-                    "install",
-                    "--disable-pip-version-check",
-                    "--target",
-                    vendor_path,
-                    pymod,
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-            )
-            FreeCAD.Console.PrintMessage(proc.stdout.decode())
-            if proc.returncode != 0:
+            try:
+                proc = subprocess.run(
+                    [
+                        python_exe,
+                        "-m",
+                        "pip",
+                        "install",
+                        "--disable-pip-version-check",
+                        "--target",
+                        vendor_path,
+                        pymod,
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=30,
+                    check=True,
+                )
+            except subprocess.CalledProcessError as e:
+                FreeCAD.Console.PrintError(str(e))
                 self.failure.emit(
                     translate(
                         "AddonsInstaller",
                         "Installation of Python package {} failed",
                     ).format(pymod),
-                    proc.stderr,
+                    str(e),
                 )
                 return
+            if proc:
+                FreeCAD.Console.PrintMessage(proc.stdout.decode())
 
     def _install_optional(self, vendor_path: os.PathLike):
         """Install the optional Python package dependencies. If any fail a message is printed to
         the console, but installation of the others continues."""
+        python_exe = utils.get_python_exe()
         for pymod in self.python_optional:
             if QtCore.QThread.currentThread().isInterruptionRequested():
                 return
@@ -512,6 +517,7 @@ class DependencyInstallationWorker(QtCore.QThread):
                     ],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
+                    timeout=30,
                     check=True,
                 )
             except subprocess.CalledProcessError as e:
@@ -549,9 +555,13 @@ class UpdateMetadataCacheWorker(QtCore.QThread):
         self.store = os.path.join(
             FreeCAD.getUserCachePath(), "AddonManager", "PackageMetadata"
         )
+        FreeCAD.Console.PrintLog(f"Storing Addon Manager cache data in {self.store}\n")
         self.updated_repos = set()
 
     def run(self):
+        """Not usually called directly: instead, create an instance and call its
+        start() function to spawn a new thread."""
+
         current_thread = QtCore.QThread.currentThread()
 
         for repo in self.repos:
@@ -591,7 +601,7 @@ class UpdateMetadataCacheWorker(QtCore.QThread):
                 NetworkManager.AM_NETWORK_MANAGER.completed.disconnect(
                     self.download_completed
                 )
-                for request in self.requests.keys():
+                for request in self.requests:
                     NetworkManager.AM_NETWORK_MANAGER.abort(request)
                 return
             # 50 ms maximum between checks for interruption
@@ -634,7 +644,8 @@ class UpdateMetadataCacheWorker(QtCore.QThread):
         with open(new_xml_file, "wb") as f:
             f.write(data.data())
         metadata = FreeCAD.Metadata(new_xml_file)
-        repo.metadata = metadata
+        repo.set_metadata(metadata)
+        FreeCAD.Console.PrintLog(f"Downloaded package.xml for {repo.name}\n")
         self.status_message.emit(
             translate("AddonsInstaller", "Downloaded package.xml for {}").format(
                 repo.name
@@ -768,8 +779,11 @@ class UpdateAllWorker(QtCore.QThread):
     def __init__(self, repos):
         super().__init__()
         self.repos = repos
+        self.repo_queue = None
 
     def run(self):
+        """Normally not called directly: create the object and call start() to launch it
+        in its own thread."""
         self.progress_made.emit(0, len(self.repos))
         self.repo_queue = queue.Queue()
         current_thread = QtCore.QThread.currentThread()
@@ -783,7 +797,7 @@ class UpdateAllWorker(QtCore.QThread):
         # itself is not thread-safe, so for the time being only spawn one update thread.
         workers = []
         for _ in range(1):
-            FreeCAD.Console.PrintLog(f"  UPDATER: Starting worker\n")
+            FreeCAD.Console.PrintLog("  UPDATER: Starting worker\n")
             worker = UpdateSingleWorker(self.repo_queue)
             worker.success.connect(self.on_success)
             worker.failure.connect(self.on_failure)
@@ -807,6 +821,7 @@ class UpdateAllWorker(QtCore.QThread):
             worker.wait()
 
     def on_success(self, repo: Addon) -> None:
+        """Callback for a successful update"""
         FreeCAD.Console.PrintLog(
             f"  UPDATER: Main thread received notice that worker successfully updated {repo.name}\n"
         )
@@ -816,6 +831,7 @@ class UpdateAllWorker(QtCore.QThread):
         self.success.emit(repo)
 
     def on_failure(self, repo: Addon) -> None:
+        """Callback when an update failed"""
         FreeCAD.Console.PrintLog(
             f"  UPDATER:  Main thread received notice that worker failed to update {repo.name}\n"
         )
@@ -826,6 +842,8 @@ class UpdateAllWorker(QtCore.QThread):
 
 
 class UpdateSingleWorker(QtCore.QThread):
+    """Worker class to update a single Addon"""
+
     success = QtCore.Signal(Addon)
     failure = QtCore.Signal(Addon)
 
@@ -835,11 +853,13 @@ class UpdateSingleWorker(QtCore.QThread):
         self.location = location
 
     def run(self):
+        """Not usually called directly: instead, create an instance and call its
+        start() function to spawn a new thread."""
         current_thread = QtCore.QThread.currentThread()
         while True:
             if current_thread.isInterruptionRequested():
                 FreeCAD.Console.PrintLog(
-                    f"  UPDATER: Interruption requested, stopping all updates\n"
+                    "  UPDATER: Interruption requested, stopping all updates\n"
                 )
                 return
             try:
@@ -849,7 +869,7 @@ class UpdateSingleWorker(QtCore.QThread):
                 )
             except queue.Empty:
                 FreeCAD.Console.PrintLog(
-                    f"  UPDATER: Worker thread queue is empty, exiting thread\n"
+                    "  UPDATER: Worker thread queue is empty, exiting thread\n"
                 )
                 return
             if repo.repo_type == Addon.Kind.MACRO:

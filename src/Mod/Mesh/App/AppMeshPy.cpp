@@ -175,7 +175,7 @@ private:
         PyMem_Free(Name);
 
         // create new document and add Import feature
-        App::Document *pcDoc = App::GetApplication().newDocument("Unnamed");
+        App::Document *pcDoc = App::GetApplication().newDocument();
 
         Mesh::Importer import(pcDoc);
         import.load(EncodedName);
@@ -269,7 +269,8 @@ private:
             exporter.reset( new ExporterAMF(outputFileName, meta, exportAmfCompressed) );
         }
         else if (exportFormat == MeshIO::ThreeMF) {
-            exporter.reset( new Exporter3MF(outputFileName) );
+            Extension3MFFactory::initialize();
+            exporter.reset( new Exporter3MF(outputFileName, Extension3MFFactory::createExtensions()) );
         }
         else if (exportFormat != MeshIO::Undefined) {
             exporter.reset( new MergeExporter(outputFileName, exportFormat) );

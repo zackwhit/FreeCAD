@@ -24,40 +24,26 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-  #include <sstream>
-  #include <QDomDocument>
-  #include <QFile>
+# include <sstream>
+# include <QDomDocument>
+# include <QDomNodeModel.h>
+# include <QFile>
+# include <QXmlQuery>
+# include <QXmlResultItems>
 #endif
 
-#include <QXmlQuery>
-#include <QXmlResultItems>
-#include "QDomNodeModel.h"
-
-#include <Base/Exception.h>
+#include <App/Application.h>
 #include <Base/Console.h>
-#include <Base/Interpreter.h>
 #include <Base/FileInfo.h>
-#include <Base/PyObjectBase.h>
 #include <Base/Quantity.h>
 #include <Base/Tools.h>
 
-#include <App/Application.h>
-
-#include <boost/regex.hpp>
-#include <boost/graph/graph_concepts.hpp>
-#include <iostream>
-#include <iterator>
-
-#include <QDebug>
-
-#include "DrawUtil.h"
-#include "DrawPage.h"
 #include "DrawSVGTemplate.h"
+#include "DrawSVGTemplatePy.h"
+#include "DrawUtil.h"
 
-#include <Mod/TechDraw/App/DrawSVGTemplatePy.h>
 
 using namespace TechDraw;
-using namespace std;
 
 PROPERTY_SOURCE(TechDraw::DrawSVGTemplate, TechDraw::DrawTemplate)
 
@@ -73,9 +59,9 @@ DrawSVGTemplate::DrawSVGTemplate()
     ADD_PROPERTY_TYPE(Template,   (""), group, App::Prop_Transient, "Template for the page");             //sb TemplateFileName???
 
     // Width and Height properties shouldn't be set by the user
-    Height.setStatus(App::Property::ReadOnly,true);
-    Width.setStatus(App::Property::ReadOnly,true);
-    Orientation.setStatus(App::Property::ReadOnly,true);
+    Height.setStatus(App::Property::ReadOnly, true);
+    Width.setStatus(App::Property::ReadOnly, true);
+    Orientation.setStatus(App::Property::ReadOnly, true);
 
     std::string svgFilter("Svg files (*.svg *.SVG);;All files (*)");
     Template.setFilter(svgFilter);
@@ -89,7 +75,7 @@ PyObject *DrawSVGTemplate::getPyObject()
 {
     if (PythonObject.is(Py::_None())) {
         // ref counter is set to 1
-        PythonObject = Py::Object(new DrawSVGTemplatePy(this),true);
+        PythonObject = Py::Object(new DrawSVGTemplatePy(this), true);
     }
     return Py::new_reference_to(PythonObject);
 }
@@ -163,8 +149,8 @@ App::DocumentObjectExecReturn * DrawSVGTemplate::execute()
 
 	if (!qDocImage.isEmpty()) {
 		// make a temp file for FileIncluded Property
-		string tempName = PageResult.getExchangeTempFile();
-		ofstream outfinal(tempName.c_str());
+		std::string tempName = PageResult.getExchangeTempFile();
+		std::ofstream outfinal(tempName.c_str());
 		std::string result = Base::Tools::toStdString(qDocImage);
 		outfinal << result;
 		outfinal.close();

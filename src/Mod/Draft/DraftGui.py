@@ -151,13 +151,8 @@ inCommandShortcuts = {
         translate("draft","Cycle snap object"),
         None
         ],
-    "NearSnap": [
-        Draft.getParam("inCommandShortcutNearSnap", "N"),
-        translate("draft","Toggle near snap on/off"),
-        None
-        ],
     "Undo": [
-        Draft.getParam("inCommandShortcutNearSnap", "/"),
+        Draft.getParam("inCommandShortcutUndo", "/"),
         translate("draft","Undo last segment"),
         None
         ],
@@ -290,7 +285,6 @@ class DraftToolBar:
         self.uiloader = FreeCADGui.UiLoader()
         self.autogroup = None
         self.isCenterPlane = False
-        self.lastMode = None
         self.input_fields = {
             "xValue":{"value":"x","unit":"Length"},
             "yValue":{"value":"y","unit":"Length"},
@@ -1203,34 +1197,8 @@ class DraftToolBar:
             self.labelx.show()
         self.makeDumbTask(extra, on_close_call)
 
-    def editUi(self, mode=None):
-        self.lastMode=mode
-        self.taskUi(translate("draft", "Edit"))
-        self.hideXYZ()
-        self.numFaces.hide()
-        self.hasFill.hide()
-        # self.addButton.show()
-        # self.delButton.show()
-        # if mode == 'Wire':
-        #     self.setEditButtons(True)
-        #     self.setBezEditButtons(False)
-        # elif mode == 'Arc':
-        #     self.addButton.hide()
-        #     self.delButton.hide()
-        #     self.arc3PtButton.show()
-        # elif mode == 'BezCurve':
-        #     self.sharpButton.show()
-        #     self.tangentButton.show()
-        #     self.symmetricButton.show()
-        self.closeButton.show()
-        # self.finishButton.show()
-        # always start Edit with buttons unchecked
-        # self.addButton.setChecked(False)
-        # self.delButton.setChecked(False)
-        # self.sharpButton.setChecked(False)
-        # self.tangentButton.setChecked(False)
-        # self.symmetricButton.setChecked(False)
-        # self.arc3PtButton.setChecked(False)
+    def editUi(self):
+        self.makeDumbTask(on_close_call=self.finish)
 
     def extUi(self):
         if Draft.getParam("UsePartPrimitives",False):
@@ -1572,10 +1540,12 @@ class DraftToolBar:
                         translate("draft", "Please enter a font file."))
 
 
-    def finish(self):
+    def finish(self, cont=None):
         """finish button action"""
         if self.sourceCmd:
-            self.sourceCmd.finish(False)
+            if cont is None:
+                cont = self.continueMode
+            self.sourceCmd.finish(cont=cont)
         if self.cancel:
             self.cancel()
             self.cancel = None
@@ -1584,15 +1554,11 @@ class DraftToolBar:
 
     def escape(self):
         """escapes the current command"""
-        self.continueMode = False
-        if not self.taskmode:
-            # self.taskmode == 0  Draft toolbar is obsolete and has been disabled (February 2020)
-            self.continueCmd.setChecked(False)
-        self.finish()
+        self.finish(cont=False)
 
     def closeLine(self):
         """close button action"""
-        self.sourceCmd.finish(True)
+        self.sourceCmd.finish(cont=self.continueMode, closed=True)
         FreeCADGui.ActiveDocument.resetEdit()
 
     def wipeLine(self):
@@ -1656,7 +1622,6 @@ class DraftToolBar:
         elif txt.upper().startswith(inCommandShortcuts["Exit"][0]):
             if self.finishButton.isVisible():
                 self.finish()
-            spec = True
         elif txt.upper().startswith(inCommandShortcuts["Continue"][0]):
             if self.continueCmd.isVisible():
                 self.toggleContinue()
@@ -1670,9 +1635,6 @@ class DraftToolBar:
             spec = True
         elif txt.upper().startswith(inCommandShortcuts["Snap"][0]):
             self.togglesnap()
-            spec = True
-        elif txt.upper().startswith(inCommandShortcuts["NearSnap"][0]):
-            self.togglenearsnap()
             spec = True
         elif txt.upper().startswith(inCommandShortcuts["Increase"][0]):
             self.toggleradius(1)
@@ -2096,13 +2058,6 @@ class DraftToolBar:
 
     def togglesnap(self):
         FreeCADGui.doCommand('FreeCADGui.runCommand("Draft_Snap_Lock")')
-
-    def togglenearsnap(self):
-        if hasattr(FreeCADGui,"Snapper"):
-            if hasattr(FreeCADGui.Snapper,"toolbarButtons"):
-                for b in FreeCADGui.Snapper.toolbarButtons:
-                    if b.objectName() == "SnapButtonpassive":
-                        b.toggle()
 
     def toggleradius(self,val):
         if hasattr(FreeCADGui,"Snapper"):

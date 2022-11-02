@@ -20,37 +20,28 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
 # include <Python.h>
 # include <cstdlib>
 # include <memory>
+
 # include <Bnd_Box.hxx>
 # include <BRep_Tool.hxx>
 # include <BRepBndLib.hxx>
-# include <BRepExtrema_DistShapeShape.hxx>
-# include <TopoDS_Vertex.hxx>
 # include <BRepBuilderAPI_MakeVertex.hxx>
+# include <BRepExtrema_DistShapeShape.hxx>
 # include <gp_Pnt.hxx>
-# include <TopoDS_Face.hxx>
-# include <TopoDS_Solid.hxx>
-# include <TopoDS_Shape.hxx>
 # include <ShapeAnalysis_ShapeTolerance.hxx>
-
-# include <boost/assign/list_of.hpp>
-# include <boost/tokenizer.hpp> //to simplify parsing input files we use the boost lib
-
+# include <SMDS_MeshGroup.hxx>
 # include <SMESH_Gen.hxx>
+# include <SMESH_Group.hxx>
 # include <SMESH_Mesh.hxx>
 # include <SMESH_MeshEditor.hxx>
-# include <SMESH_Group.hxx>
-# include <SMDS_MeshGroup.hxx>
-# include <SMESHDS_GroupBase.hxx>
 # include <SMESHDS_Group.hxx>
+# include <SMESHDS_GroupBase.hxx>
 # include <SMESHDS_Mesh.hxx>
-# include <SMDS_VolumeTool.hxx>
 # include <StdMeshers_MaxLength.hxx>
 # include <StdMeshers_LocalLength.hxx>
 # include <StdMeshers_MaxElementArea.hxx>
@@ -60,32 +51,31 @@
 # include <StdMeshers_StartEndLength.hxx>
 # include <StdMeshers_QuadranglePreference.hxx>
 # include <StdMeshers_Quadrangle_2D.hxx>
-# include <StdMeshers_QuadraticMesh.hxx>
+# include <TopoDS_Face.hxx>
+# include <TopoDS_Shape.hxx>
+# include <TopoDS_Solid.hxx>
+# include <TopoDS_Vertex.hxx>
 
+# include <boost/assign/list_of.hpp>
+# include <boost/tokenizer.hpp> //to simplify parsing input files we use the boost lib
 #endif
 
-#include <Base/Writer.h>
-#include <Base/Reader.h>
-#include <Base/Stream.h>
+#include <App/Application.h>
+#include <Base/Console.h>
 #include <Base/Exception.h>
 #include <Base/FileInfo.h>
+#include <Base/Reader.h>
+#include <Base/Stream.h>
 #include <Base/TimeInfo.h>
-#include <Base/Console.h>
-#include <Base/Interpreter.h>
-#include <App/Application.h>
-
-#include <Mod/Mesh/App/Core/MeshKernel.h>
-#include <Mod/Mesh/App/Core/Evaluation.h>
+#include <Base/Writer.h>
 #include <Mod/Mesh/App/Core/Iterator.h>
 
 #include "FemMesh.h"
+#include <FemMeshPy.h>
+
 #ifdef FC_USE_VTK
-#include "FemVTKTools.h"
+# include "FemVTKTools.h"
 #endif
-
-# include <FemMeshPy.h>
-
-
 
 
 using namespace Fem;
@@ -1181,7 +1171,7 @@ class GRIDFreeFieldElement : public GRIDElement {
     void read(const std::string& str, const std::string&) override {
         char_separator<char> sep(",");
         tokenizer<char_separator<char> > tokens(str, sep);
-        std::vector<string> token_results;
+        std::vector<std::string> token_results;
         token_results.assign(tokens.begin(),tokens.end());
         if (token_results.size() < 6)
             return;//Line does not include Nodal coordinates
@@ -1235,7 +1225,7 @@ public:
     void read(const std::string& str, const std::string&) override {
         char_separator<char> sep(",");
         tokenizer<char_separator<char> > tokens(str, sep);
-        std::vector<string> token_results;
+        std::vector<std::string> token_results;
         token_results.assign(tokens.begin(),tokens.end());
         if (token_results.size() < 6)
             return;//Line does not include enough nodal IDs
@@ -1305,7 +1295,7 @@ public:
     void read(const std::string& str, const std::string&) override {
         char_separator<char> sep(",");
         tokenizer<char_separator<char> > tokens(str, sep);
-        std::vector<string> token_results;
+        std::vector<std::string> token_results;
         token_results.assign(tokens.begin(),tokens.end());
         if (token_results.size() < 14)
             return;//Line does not include enough nodal IDs

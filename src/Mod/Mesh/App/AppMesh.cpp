@@ -26,6 +26,7 @@
 #include <Base/Interpreter.h>
 #include <App/Application.h>
 
+#include "Exporter.h"
 #include "Mesh.h"
 #include "MeshPy.h"
 #include "MeshPointPy.h"
@@ -68,9 +69,12 @@ PyMOD_INIT_FUNC(Mesh)
     Base::Interpreter().addType(&Mesh::MeshPy       ::Type,meshModule,"Mesh");
     Base::Interpreter().addType(&Mesh::MeshFeaturePy::Type,meshModule,"Feature");
 
+    Mesh::Extension3MFFactory::addProducer(new Mesh::GuiExtension3MFProducer);
+
     // init Type system
     Mesh::PropertyNormalList    ::init();
     Mesh::PropertyCurvatureList ::init();
+    Mesh::PropertyMaterial      ::init();
     Mesh::PropertyMeshKernel    ::init();
 
     Mesh::MeshObject            ::init();

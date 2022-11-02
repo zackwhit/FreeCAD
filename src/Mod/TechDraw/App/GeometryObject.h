@@ -20,18 +20,17 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _TECHDRAW_GEOMETRYOBJECT_H
-#define _TECHDRAW_GEOMETRYOBJECT_H
+#ifndef TECHDRAW_GEOMETRYOBJECT_H
+#define TECHDRAW_GEOMETRYOBJECT_H
 
 #include <Mod/TechDraw/TechDrawGlobal.h>
 
 #include <string>
 #include <vector>
 
-#include <TopoDS_Shape.hxx>
-#include <TopoDS_Compound.hxx>
 #include <gp_Ax2.hxx>
 #include <gp_Pnt.hxx>
+#include <TopoDS_Shape.hxx>
 
 #include <Base/BoundBox.h>
 #include <Base/Vector3D.h>
@@ -62,19 +61,30 @@ TopoDS_Shape TechDrawExport mirrorShapeVec(const TopoDS_Shape &input,
                              double scale = 1.0);
 
 TopoDS_Shape TechDrawExport mirrorShape(const TopoDS_Shape &input,
-                        const gp_Pnt& inputCenter = gp_Pnt(0.0,0.0,0.0),
+                        const gp_Pnt& inputCenter = gp_Pnt(0.0, 0.0, 0.0),
                         double scale = 1.0);
 
 TopoDS_Shape TechDrawExport scaleShape(const TopoDS_Shape &input,
                                        double scale);
 TopoDS_Shape TechDrawExport rotateShape(const TopoDS_Shape &input,
-                             gp_Ax2& viewAxis,
-                             double rotAngle);
+                                        const gp_Ax2& viewAxis,
+                                        double rotAngle);
 TopoDS_Shape TechDrawExport moveShape(const TopoDS_Shape &input,
                                       const Base::Vector3d& motion);
-
+TopoDS_Shape TechDrawExport moveShapeRestricted(const TopoDS_Shape &input,
+                                                const Base::Vector3d& motion,
+                                                bool allowX = true,
+                                                bool allowY = true,
+                                                bool allowZ = true);
+TopoDS_Shape TechDrawExport moveShapeRestricted(const TopoDS_Shape &input,
+                                                const Base::Vector3d& motion,
+                                                const Base::Vector3d& mask);
+TopoDS_Shape TechDrawExport moveShapeRestricted(const TopoDS_Shape &input,
+                                                const gp_Vec& motion,
+                                                const gp_Vec& mask);
 
 //! Returns the centroid of shape, as viewed according to direction
+gp_Pnt TechDrawExport findCentroid(const TopoDS_Shape& shape);
 gp_Pnt TechDrawExport findCentroid(const TopoDS_Shape &shape,
                         const Base::Vector3d &direction);
 gp_Pnt TechDrawExport findCentroid(const TopoDS_Shape &shape,
@@ -111,7 +121,7 @@ public:
     const BaseGeomPtrVector & getEdgeGeometry() const { return edgeGeom; }
     const BaseGeomPtrVector getVisibleFaceEdges(bool smooth, bool seam) const;
     const std::vector<FacePtr>     & getFaceGeometry() const { return faceGeom; }
-    
+
     void setVertexGeometry(std::vector<VertexPtr> newVerts) {vertexGeom = newVerts; }
     void setEdgeGeometry(BaseGeomPtrVector newGeoms) {edgeGeom = newGeoms; }
 
@@ -119,9 +129,12 @@ public:
                       const gp_Ax2 &viewAxis);
     void projectShapeWithPolygonAlgo(const TopoDS_Shape &input,
                                      const gp_Ax2 &viewAxis);
-    TopoDS_Shape projectFace(const TopoDS_Shape &face,
-                             const gp_Ax2 &CS);
-
+    static TopoDS_Shape projectSimpleShape(const TopoDS_Shape &shape,
+                                           const gp_Ax2 &CS);
+    static TopoDS_Shape simpleProjection(const TopoDS_Shape& shape,
+                                         const gp_Ax2& projCS);
+    static TopoDS_Shape projectFace(const TopoDS_Shape &face,
+                                    const gp_Ax2 &CS);
     void makeTDGeometry();
     void extractGeometry(edgeClass category, bool visible);
     void addFaceGeom(FacePtr f);

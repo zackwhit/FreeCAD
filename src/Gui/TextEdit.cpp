@@ -23,8 +23,11 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+# include <QApplication>
 # include <QKeyEvent>
 # include <QPainter>
+# include <QRegularExpression>
+# include <QRegularExpressionMatch>
 # include <QShortcut>
 # include <QTextCursor>
 #endif
@@ -44,22 +47,22 @@ TextEdit::TextEdit(QWidget* parent)
 {
     //Note: Set the correct context to this shortcut as we may use several instances of this
     //class at a time
-    QShortcut* shortcut = new QShortcut(this);
+    auto shortcut = new QShortcut(this);
     shortcut->setKey(QKeySequence(QString::fromLatin1("CTRL+Space")));
     shortcut->setContext(Qt::WidgetShortcut);
     connect(shortcut, SIGNAL(activated()), this, SLOT(complete()));
 
-    QShortcut* shortcutFind = new QShortcut(this);
+    auto shortcutFind = new QShortcut(this);
     shortcutFind->setKey(QKeySequence::Find);
     shortcutFind->setContext(Qt::WidgetShortcut);
     connect(shortcutFind, SIGNAL(activated()), this, SIGNAL(showSearchBar()));
 
-    QShortcut* shortcutNext = new QShortcut(this);
+    auto shortcutNext = new QShortcut(this);
     shortcutNext->setKey(QKeySequence::FindNext);
     shortcutNext->setContext(Qt::WidgetShortcut);
     connect(shortcutNext, SIGNAL(activated()), this, SIGNAL(findNext()));
 
-    QShortcut* shortcutPrev = new QShortcut(this);
+    auto shortcutPrev = new QShortcut(this);
     shortcutPrev->setKey(QKeySequence::FindPrevious);
     shortcutPrev->setContext(Qt::WidgetShortcut);
     connect(shortcutPrev, SIGNAL(activated()), this, SIGNAL(findPrevious()));
@@ -111,7 +114,7 @@ void TextEdit::complete()
     if (wordPrefix.isEmpty())
         return;
 
-    QStringList list = toPlainText().split(QRegExp(QLatin1String("\\W+")));
+    QStringList list = toPlainText().split(QRegularExpression(QLatin1String("\\W+")));
     QMap<QString, QString> map;
     QStringList::Iterator it = list.begin();
     while (it != list.end()) {
@@ -195,7 +198,7 @@ struct TextEditorP
     QMap<QString, QColor> colormap; // Color map
     TextEditorP()
     {
-        colormap[QLatin1String("Text")] = Qt::black;
+        colormap[QLatin1String("Text")] = qApp->palette().windowText().color();
         colormap[QLatin1String("Bookmark")] = Qt::cyan;
         colormap[QLatin1String("Breakpoint")] = Qt::red;
         colormap[QLatin1String("Keyword")] = Qt::blue;
@@ -290,7 +293,7 @@ void TextEditor::highlightCurrentLine()
         QColor lineColor = d->colormap[QLatin1String("Current line highlight")];
         unsigned int col = (lineColor.red() << 24) | (lineColor.green() << 16) | (lineColor.blue() << 8);
         ParameterGrp::handle hPrefGrp = getWindowParameter();
-        unsigned long value = static_cast<unsigned long>(col);
+        auto value = static_cast<unsigned long>(col);
         value = hPrefGrp->GetUnsigned( "Current line highlight", value);
         col = static_cast<unsigned int>(value);
         lineColor.setRgb((col>>24)&0xff, (col>>16)&0xff, (col>>8)&0xff);
@@ -454,7 +457,7 @@ void TextEditor::OnChange(Base::Subject<const char*> &rCaller,const char* sReaso
         if (it != d->colormap.end()) {
             QColor color = it.value();
             unsigned int col = (color.red() << 24) | (color.green() << 16) | (color.blue() << 8);
-            unsigned long value = static_cast<unsigned long>(col);
+            auto value = static_cast<unsigned long>(col);
             value = hPrefGrp->GetUnsigned(sReason, value);
             col = static_cast<unsigned int>(value);
             color.setRgb((col>>24)&0xff, (col>>16)&0xff, (col>>8)&0xff);
@@ -565,7 +568,7 @@ bool CompletionList::eventFilter(QObject * watched, QEvent * event)
             hide();
     } else if (isVisible() && watched == textEdit) {
         if (event->type() == QEvent::KeyPress) {
-            QKeyEvent* ke = (QKeyEvent*)event;
+            auto ke = static_cast<QKeyEvent*>(event);
             if (ke->key() == Qt::Key_Up || ke->key() == Qt::Key_Down) {
                 keyPressEvent(ke);
                 return true;

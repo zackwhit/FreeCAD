@@ -21,36 +21,36 @@
  ***************************************************************************/
 
 #include "PreCompiled.h"
+
 #ifndef _PreComp_
-# include <QKeyEvent>
 # include <QAction>
-# include <QMenu>
 # include <QApplication>
 # include <QClipboard>
-# include <QMenu>
+# include <QKeyEvent>
 # include <QMessageBox>
+# include <QMenu>
 # include <QMimeData>
-# include <QTextStream>
 #endif
 # include <QTextTableCell>
 
 #include <App/Application.h>
 #include <App/AutoTransaction.h>
 #include <App/Document.h>
+#include <App/Range.h>
 #include <Base/Reader.h>
 #include <Base/Stream.h>
 #include <Base/Writer.h>
-#include <Gui/CommandT.h>
 #include <Gui/Application.h>
+#include <Gui/CommandT.h>
 #include <Gui/MainWindow.h>
-#include "../App/Utils.h"
-#include "../App/Cell.h"
-#include <App/Range.h>
+#include <Mod/Spreadsheet/App/Cell.h>
+
 #include "SheetTableView.h"
-#include "LineEdit.h"
-#include "PropertiesDialog.h"
 #include "DlgBindSheet.h"
 #include "DlgSheetConf.h"
+#include "LineEdit.h"
+#include "PropertiesDialog.h"
+
 
 using namespace SpreadsheetGui;
 using namespace Spreadsheet;
@@ -166,27 +166,27 @@ SheetTableView::SheetTableView(QWidget *parent)
             menu.exec(horizontalHeader()->mapToGlobal(point));
        });
        
-    auto cellProperties = new QAction(tr("Properties..."), this);
-    addAction(cellProperties);
+    actionProperties = new QAction(tr("Properties..."), this);
+    addAction(actionProperties);
     
     horizontalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
     verticalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
 
     contextMenu = new QMenu(this);
 
-    contextMenu->addAction(cellProperties);
-    connect(cellProperties, SIGNAL(triggered()), this, SLOT(cellProperties()));
+    contextMenu->addAction(actionProperties);
+    connect(actionProperties, SIGNAL(triggered()), this, SLOT(cellProperties()));
 
     contextMenu->addSeparator();
-    QAction *recompute = new QAction(tr("Recompute"),this);
-    connect(recompute, SIGNAL(triggered()), this, SLOT(onRecompute()));
-    contextMenu->addAction(recompute);
+    actionRecompute = new QAction(tr("Recompute"),this);
+    connect(actionRecompute, SIGNAL(triggered()), this, SLOT(onRecompute()));
+    contextMenu->addAction(actionRecompute);
 
     actionBind = new QAction(tr("Bind..."),this);
     connect(actionBind, SIGNAL(triggered()), this, SLOT(onBind()));
     contextMenu->addAction(actionBind);
 
-    QAction *actionConf = new QAction(tr("Configuration table..."),this);
+    actionConf = new QAction(tr("Configuration table..."),this);
     connect(actionConf, SIGNAL(triggered()), this, SLOT(onConfSetup()));
     contextMenu->addAction(actionConf);
 
@@ -210,6 +210,9 @@ SheetTableView::SheetTableView(QWidget *parent)
     connect(actionDel,SIGNAL(triggered()), this, SLOT(deleteSelection()));
 
     setTabKeyNavigation(false);
+
+    timer.setSingleShot(true);
+    QObject::connect(&timer, &QTimer::timeout, [this](){updateCellSpan();});
 }
 
 void SheetTableView::onRecompute() {
@@ -456,20 +459,31 @@ SheetTableView::~SheetTableView()
 
 }
 
-void SheetTableView::updateCellSpan(CellAddress address)
+void SheetTableView::updateCellSpan()
 {
     int rows, cols;
 
-    sheet->getSpans(address, rows, cols);
+    // Unspan first to avoid overlap
+    for (const auto &addr : spanChanges) {
+        if (rowSpan(addr.row(), addr.col()) > 1 || columnSpan(addr.row(), addr.col()) > 1)
+            setSpan(addr.row(), addr.col(), 1, 1);
+    }
 
-    if (rows != rowSpan(address.row(), address.col()) || cols != columnSpan(address.row(), address.col()))
-        setSpan(address.row(), address.col(), rows, cols);
+    for (const auto &addr : spanChanges) {
+        sheet->getSpans(addr, rows, cols);
+        if (rows > 1 || cols > 1)
+            setSpan(addr.row(), addr.col(), rows, cols);
+    }
+    spanChanges.clear();
 }
 
 void SheetTableView::setSheet(Sheet* _sheet)
 {
     sheet = _sheet;
-    cellSpanChangedConnection = sheet->cellSpanChanged.connect(bind(&SheetTableView::updateCellSpan, this, bp::_1));
+    cellSpanChangedConnection = sheet->cellSpanChanged.connect([&](const CellAddress &addr) {
+        spanChanges.insert(addr);
+        timer.start(10);
+    });
 
     // Update row and column spans
     std::vector<std::string> usedCells = sheet->getUsedCells();
@@ -477,8 +491,11 @@ void SheetTableView::setSheet(Sheet* _sheet)
     for (std::vector<std::string>::const_iterator i = usedCells.begin(); i != usedCells.end(); ++i) {
         CellAddress address(*i);
 
-        if (sheet->isMergedCell(address))
-            updateCellSpan(address);
+        if (sheet->isMergedCell(address)) {
+            int rows, cols;
+            sheet->getSpans(address, rows, cols);
+            setSpan(address.row(), address.col(), rows, cols);
+        }
     }
 
     // Update column widths and row height
@@ -591,6 +608,18 @@ bool SheetTableView::event(QEvent* event)
         else if (kevent->matches(QKeySequence::Paste)) {
             kevent->accept();
         }
+    }
+    else if (event->type() == QEvent::LanguageChange) {
+        actionProperties->setText(tr("Properties..."));
+        actionRecompute->setText(tr("Recompute"));
+        actionConf->setText(tr("Configuration table..."));
+        actionMerge->setText(tr("Merge cells"));
+        actionSplit->setText(tr("Split cells"));
+        actionCopy->setText(tr("Copy"));
+        actionPaste->setText(tr("Paste"));
+        actionCut->setText(tr("Cut"));
+        actionDel->setText(tr("Delete"));
+        actionBind->setText(tr("Bind..."));
     }
     return QTableView::event(event);
 }

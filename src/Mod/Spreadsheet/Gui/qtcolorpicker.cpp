@@ -3,6 +3,7 @@
 ** This file is part of a Qt Solutions component.
 **
 ** Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Modified 2022 by 0penBrain under LGPL : fix issues about popup positioning
 **
 ** Contact:  Qt Software Information (qt-info@nokia.com)
 **
@@ -45,7 +46,7 @@
 ****************************************************************************/
 
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QPainter>
 #include <QPushButton>
 #include <QColorDialog>
@@ -323,8 +324,8 @@ void QtColorPicker::buttonPressed(bool toggled)
     if (pos.y() < desktop.top())
        pos.setY(desktop.top());
 
-    if ((pos.x() + popup->sizeHint().width()) > desktop.width())
-       pos.setX(desktop.width() - popup->sizeHint().width());
+    if ((pos.x() + popup->sizeHint().width()) > desktop.right())
+       pos.setX(desktop.right() - popup->sizeHint().width());
     if ((pos.y() + popup->sizeHint().height()) > desktop.bottom())
        pos.setY(desktop.bottom() - popup->sizeHint().height());
     popup->move(pos);
@@ -871,7 +872,7 @@ void ColorPickerPopup::regenerateGrid()
     // one.
     if (grid) delete grid;
     grid = new QGridLayout(this);
-    grid->setMargin(1);
+    grid->setContentsMargins(1, 1, 1, 1);
     grid->setSpacing(0);
 
     int ccol = 0, crow = 0;

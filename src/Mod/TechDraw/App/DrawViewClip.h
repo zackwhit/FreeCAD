@@ -21,15 +21,13 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _DrawViewClip_h_
-#define _DrawViewClip_h_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef DrawViewClip_h_
+#define DrawViewClip_h_
 
 #include <App/DocumentObject.h>
 #include <App/FeaturePython.h>
 #include <App/PropertyLinks.h>
-#include <App/PropertyUnits.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
 
 #include "DrawView.h"
 
@@ -44,7 +42,7 @@ class TechDrawExport DrawViewClip: public TechDraw::DrawView
 public:
     /// Constructor
     DrawViewClip();
-    ~DrawViewClip() override;
+    ~DrawViewClip() = default;
 
     App::PropertyLength Width;
     App::PropertyLength Height;
@@ -70,7 +68,7 @@ public:
 
     std::vector<std::string> getChildViewNames();
     bool isViewInClip(App::DocumentObject* view);
-    QRectF getRect() const override { return QRectF(0,0,Width.getValue(),Height.getValue()); }
+    QRectF getRect() const override { return { 0, 0, Width.getValue(), Height.getValue() };  }
 
 
 protected:

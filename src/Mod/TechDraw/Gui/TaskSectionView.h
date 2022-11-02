@@ -39,6 +39,9 @@ namespace TechDraw {
 namespace TechDrawGui
 {
 
+class CompassWidget;
+class VectorEditWidget;
+
 class TaskSectionView : public QWidget
 {
     Q_OBJECT
@@ -46,11 +49,33 @@ class TaskSectionView : public QWidget
 public:
     explicit TaskSectionView(TechDraw::DrawViewPart* base);
     explicit TaskSectionView(TechDraw::DrawViewSection* section);
-    ~TaskSectionView() override;
+    ~TaskSectionView() = default;
 
-public:
     virtual bool accept();
     virtual bool reject();
+
+protected:
+    void changeEvent(QEvent *event) override;
+    void saveSectionState();
+    void restoreSectionState();
+
+    bool apply(bool forceUpdate = false);
+    void applyQuick(std::string dir);
+    void applyAligned(Base::Vector3d localUnit);
+
+    TechDraw::DrawViewSection* createSectionView();
+    void updateSectionView();
+
+    void setUiPrimary();
+    void setUiEdit();
+    void setUiCommon(Base::Vector3d origin);
+
+    void checkAll(bool check);
+    void enableAll(bool enable);
+
+    void failNoObject();
+    bool isBaseValid();
+    bool isSectionValid();
 
 protected Q_SLOTS:
     void onUpClicked();
@@ -63,29 +88,10 @@ protected Q_SLOTS:
     void onYChanged();
     void onZChanged();
     void scaleTypeChanged(int index);
-
-
-protected:
-    void changeEvent(QEvent *e) override;
-    void saveSectionState();
-    void restoreSectionState();
-
-    bool apply();
-    void applyQuick(std::string dir);
-    void applyAligned();
-
-    void createSectionView();
-    void updateSectionView();
-
-    void setUiPrimary();
-    void setUiEdit();
-
-    void checkAll(bool b);
-    void enableAll(bool b);
-
-    void failNoObject(std::string objName);
-    bool isBaseValid();
-    bool isSectionValid();
+    void liveUpdateClicked();
+    void updateNowClicked();
+    void slotChangeAngle(double newAngle);
+    void slotViewDirectionChanged(Base::Vector3d newDirection);
 
 private:
     std::unique_ptr<Ui_TaskSectionView> ui;
@@ -95,7 +101,7 @@ private:
     Base::Vector3d m_normal;
     Base::Vector3d m_direction;
     Base::Vector3d m_origin;
-    
+
     std::string m_saveSymbol;
     std::string m_saveDirName;
     Base::Vector3d m_saveNormal;
@@ -115,8 +121,10 @@ private:
     std::string m_saveBaseName;
     std::string m_savePageName;
 
-    bool m_abort;
-
+    int m_applyDeferred;
+    Base::Vector3d m_localUnit;
+    CompassWidget* m_compass;
+    VectorEditWidget* m_viewDirectionWidget;
 };
 
 class TaskDlgSectionView : public Gui::TaskView::TaskDialog
@@ -128,7 +136,6 @@ public:
     explicit TaskDlgSectionView(TechDraw::DrawViewSection* section);
     ~TaskDlgSectionView() override;
 
-public:
     /// is called the TaskView when the dialog is opened
     void open() override;
     /// is called by the framework if an button is clicked which has no accept or reject role
@@ -137,12 +144,9 @@ public:
     bool accept() override;
     /// is called by the framework if the dialog is rejected (Cancel)
     bool reject() override;
-    /// is called by the framework if the user presses the help button
-    void helpRequested() override { return;}
 
     QDialogButtonBox::StandardButtons getStandardButtons() const override
     { return QDialogButtonBox::Ok | QDialogButtonBox::Cancel; }
-/*    virtual void modifyStandardButtons(QDialogButtonBox* box);*/
 
     void update();
 
@@ -150,8 +154,6 @@ public:
     { return false; }
     bool isAllowedAlterDocument() const override
     { return false; }
-
-protected:
 
 private:
     TaskSectionView * widget;

@@ -57,6 +57,7 @@ import re
 import pathlib
 
 directories = [
+        {"tsname":"App", "workingdir":"./src/App", "tsdir":"Resources/translations"},
         {"tsname":"FreeCAD", "workingdir":"./src/Gui", "tsdir":"Language"},
         {"tsname":"AddonManager", "workingdir":"./src/Mod/AddonManager/", "tsdir":"Resources/translations"},
         {"tsname":"Arch", "workingdir":"./src/Mod/Arch/", "tsdir":"Resources/translations"},
@@ -132,6 +133,10 @@ def find_tools(noobsolete=True):
             raise Exception("Cannot find qmake")
         if (os.system("pylupdate -version") == 0):
             PYLUPDATE = "pylupdate"
+        elif (os.system("pylupdate6 --version") == 0):
+            PYLUPDATE = "pylupdate6"
+            if noobsolete:
+                PYLUPDATE += " -noobsolete"
         elif (os.system("pylupdate5 -version") == 0):
             PYLUPDATE = "pylupdate5"
             if noobsolete:

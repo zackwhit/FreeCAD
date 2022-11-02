@@ -42,6 +42,9 @@
 
 #include <Mod/Sketcher/App/GeoList.h>
 
+#include <Inventor/sensors/SoNodeSensor.h>
+#include <Inventor/SoRenderManager.h>
+
 class TopoDS_Shape;
 class TopoDS_Face;
 class SoSeparator;
@@ -388,6 +391,13 @@ private:
         bool buttonPress = false;
     };
 
+    /** @brief Private struct grouping ViewProvider and RenderManager node, to be used as SoNode sensor data
+     */
+    struct VPRender {
+        ViewProviderSketch* vp;
+        SoRenderManager* renderMgr;
+    };
+
 public:
     /// constructor
     ViewProviderSketch();
@@ -490,6 +500,8 @@ public:
     void centerSelection();
     /// returns the scale factor
     float getScaleFactor() const;
+    /// returns view orientation factor
+    int getViewOrientationFactor() const;
     //@}
 
     /** @name constraint Virtual Space visibility management */
@@ -551,6 +563,7 @@ protected:
     void unsetEdit(int ModNum) override;
     void setEditViewer(Gui::View3DInventorViewer*, int ModNum) override;
     void unsetEditViewer(Gui::View3DInventorViewer*) override;
+    static void camSensCB(void *data, SoSensor *); // camera sensor callback
     //@}
 
     /** @name miscelanea editing functions */
@@ -763,6 +776,9 @@ private:
     std::unique_ptr<DrawSketchHandler> sketchHandler;
 
     ViewProviderParameters viewProviderParameters;
+
+    SoNodeSensor cameraSensor;
+    int viewOrientationFactor; // stores if sketch viewed from front or back
 };
 
 } // namespace PartGui

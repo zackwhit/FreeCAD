@@ -20,14 +20,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _ARROWENUMS_H_
-#define _ARROWENUMS_H_
+#ifndef ARROWENUMS_H_
+#define ARROWENUMS_H_
+
+#include <string>
+#include <vector>
+#include <QCoreApplication>
 
 #include <Mod/TechDraw/TechDrawGlobal.h>
-
-#include <vector>
-#include <string>
-#include <QCoreApplication>
 
 
 namespace TechDraw

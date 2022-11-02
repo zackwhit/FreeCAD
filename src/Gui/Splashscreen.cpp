@@ -28,6 +28,8 @@
 # include <QLocale>
 # include <QMutex>
 # include <QProcessEnvironment>
+# include <QRegularExpression>
+# include <QRegularExpressionMatch>
 # include <QScreen>
 # include <QSysInfo>
 # include <QTextBrowser>
@@ -68,7 +70,7 @@ public:
 
         // allow to customize text position and color
         const std::map<std::string,std::string>& cfg = App::GetApplication().Config();
-        std::map<std::string,std::string>::const_iterator al = cfg.find("SplashAlignment");
+        auto al = cfg.find("SplashAlignment");
         if (al != cfg.end()) {
             QString alt = QString::fromLatin1(al->second.c_str());
             int align=0;
@@ -90,7 +92,7 @@ public:
         }
 
         // choose text color
-        std::map<std::string,std::string>::const_iterator tc = cfg.find("SplashTextColor");
+        auto tc = cfg.find("SplashTextColor");
         if (tc != cfg.end()) {
             QColor col; col.setNamedColor(QString::fromLatin1(tc->second.c_str()));
             if (col.isValid())
@@ -119,18 +121,18 @@ public:
     void Log (const char * s)
     {
         QString msg(QString::fromUtf8(s));
-        QRegExp rx;
+        QRegularExpression rx;
         // ignore 'Init:' and 'Mod:' prefixes
         rx.setPattern(QLatin1String("^\\s*(Init:|Mod:)\\s*"));
-        int pos = rx.indexIn(msg);
-        if (pos != -1) {
-            msg = msg.mid(rx.matchedLength());
+        auto match = rx.match(msg);
+        if (match.hasMatch()) {
+            msg = msg.mid(match.capturedLength());
         }
         else {
             // ignore activation of commands
             rx.setPattern(QLatin1String("^\\s*(\\+App::|Create|CmdC:|CmdG:|Act:)\\s*"));
-            pos = rx.indexIn(msg);
-            if (pos == 0)
+            match = rx.match(msg);
+            if (match.hasMatch() && match.capturedStart() == 0)
                 return;
         }
 
@@ -390,11 +392,11 @@ void AboutDialog::showCredits()
         return;
     }
 
-    QWidget* tab_credits = new QWidget();
+    auto tab_credits = new QWidget();
     tab_credits->setObjectName(QString::fromLatin1("tab_credits"));
     ui->tabWidget->addTab(tab_credits, tr("Credits"));
-    QVBoxLayout* hlayout = new QVBoxLayout(tab_credits);
-    QTextBrowser* textField = new QTextBrowser(tab_credits);
+    auto hlayout = new QVBoxLayout(tab_credits);
+    auto textField = new QTextBrowser(tab_credits);
     textField->setOpenExternalLinks(false);
     textField->setOpenLinks(false);
     hlayout->addWidget(textField);
@@ -410,7 +412,9 @@ void AboutDialog::showCredits()
     creditsHTML += QString::fromLatin1("</h2><ul>");
 
     QTextStream stream(&creditsFile);
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
     stream.setCodec("UTF-8");
+#endif
     QString line;
     while (stream.readLineInto(&line)) {
         if (!line.isEmpty()) {
@@ -442,11 +446,11 @@ void AboutDialog::showLicenseInformation()
 
         ui->tabWidget->removeTab(1); // Hide the license placeholder widget
 
-        QWidget* tab_license = new QWidget();
+        auto tab_license = new QWidget();
         tab_license->setObjectName(QString::fromLatin1("tab_license"));
         ui->tabWidget->addTab(tab_license, tr("License"));
-        QVBoxLayout* hlayout = new QVBoxLayout(tab_license);
-        QTextBrowser* textField = new QTextBrowser(tab_license);
+        auto hlayout = new QVBoxLayout(tab_license);
+        auto textField = new QTextBrowser(tab_license);
         textField->setOpenExternalLinks(true);
         textField->setOpenLinks(true);
         hlayout->addWidget(textField);
@@ -481,11 +485,11 @@ QString AboutDialog::getAdditionalLicenseInformation() const
 
 void AboutDialog::showLibraryInformation()
 {
-    QWidget *tab_library = new QWidget();
+    auto tab_library = new QWidget();
     tab_library->setObjectName(QString::fromLatin1("tab_library"));
     ui->tabWidget->addTab(tab_library, tr("Libraries"));
-    QVBoxLayout* hlayout = new QVBoxLayout(tab_library);
-    QTextBrowser* textField = new QTextBrowser(tab_library);
+    auto hlayout = new QVBoxLayout(tab_library);
+    auto textField = new QTextBrowser(tab_library);
     textField->setOpenExternalLinks(false);
     textField->setOpenLinks(false);
     hlayout->addWidget(textField);
@@ -648,11 +652,11 @@ void AboutDialog::showCollectionInformation()
     if (!QFile::exists(path))
         return;
 
-    QWidget *tab_collection = new QWidget();
+    auto tab_collection = new QWidget();
     tab_collection->setObjectName(QString::fromLatin1("tab_collection"));
     ui->tabWidget->addTab(tab_collection, tr("Collection"));
-    QVBoxLayout* hlayout = new QVBoxLayout(tab_collection);
-    QTextBrowser* textField = new QTextBrowser(tab_collection);
+    auto hlayout = new QVBoxLayout(tab_collection);
+    auto textField = new QTextBrowser(tab_collection);
     textField->setOpenExternalLinks(true);
     hlayout->addWidget(textField);
     textField->setSource(path);
@@ -660,7 +664,7 @@ void AboutDialog::showCollectionInformation()
 
 void AboutDialog::linkActivated(const QUrl& link)
 {
-    LicenseView* licenseView = new LicenseView();
+    auto licenseView = new LicenseView();
     licenseView->setAttribute(Qt::WA_DeleteOnClose);
     licenseView->show();
     QString title = tr("License");

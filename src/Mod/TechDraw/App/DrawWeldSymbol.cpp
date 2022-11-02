@@ -22,24 +22,15 @@
 
 #include "PreCompiled.h"
 
-#ifndef _PreComp_
-#endif
-
-#include <App/Application.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
 #include <Base/Console.h>
-#include <Base/Exception.h>
-#include <Base/Parameter.h>
 
-#include "DrawUtil.h"
-
-#include <Mod/TechDraw/App/DrawWeldSymbolPy.h>  // generated from DrawWeldSymbolPy.xml
-
-#include "DrawLeaderLine.h"
-#include "DrawTile.h"
-#include "DrawTileWeld.h"
 #include "DrawWeldSymbol.h"
+#include "DrawWeldSymbolPy.h"  // generated from DrawWeldSymbolPy.xml
+#include "DrawLeaderLine.h"
+#include "DrawTileWeld.h"
+
 
 using namespace TechDraw;
 
@@ -53,20 +44,16 @@ DrawWeldSymbol::DrawWeldSymbol()
 {
     static const char *group = "Weld Symbol";
 
-    ADD_PROPERTY_TYPE(Leader,(nullptr),group,(App::PropertyType)(App::Prop_None), "Parent Leader");
+    ADD_PROPERTY_TYPE(Leader, (nullptr), group, (App::PropertyType)(App::Prop_None), "Parent Leader");
     ADD_PROPERTY_TYPE(AllAround, (false), group, App::Prop_None, "All Around Symbol on/off");
     ADD_PROPERTY_TYPE(FieldWeld, (false), group, App::Prop_None, "Field Weld Symbol on/off");
     ADD_PROPERTY_TYPE(AlternatingWeld, (false), group, App::Prop_None, "Alternating Weld true/false");
     ADD_PROPERTY_TYPE(TailText, (""), group, App::Prop_None, "Text at tail of symbol");
 
-    Caption.setStatus(App::Property::Hidden,true);
-    Scale.setStatus(App::Property::Hidden,true);
-    ScaleType.setStatus(App::Property::Hidden,true);
+    Caption.setStatus(App::Property::Hidden, true);
+    Scale.setStatus(App::Property::Hidden, true);
+    ScaleType.setStatus(App::Property::Hidden, true);
     Rotation.setStatus(App::Property::Hidden, true);
-}
-
-DrawWeldSymbol::~DrawWeldSymbol()
-{
 }
 
 //DWS always has exactly 2 child tiles - ArrowSide and OtherSide.
@@ -166,7 +153,7 @@ PyObject *DrawWeldSymbol::getPyObject()
 {
     if (PythonObject.is(Py::_None())) {
         // ref counter is set to 1
-        PythonObject = Py::Object(new DrawWeldSymbolPy(this),true);
+        PythonObject = Py::Object(new DrawWeldSymbolPy(this), true);
     }
     return Py::new_reference_to(PythonObject);
 }

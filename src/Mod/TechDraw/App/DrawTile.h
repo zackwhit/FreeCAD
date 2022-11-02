@@ -20,15 +20,15 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _TechDraw_DrawTile_h_
-#define _TechDraw_DrawTile_h_
+#ifndef TechDraw_DrawTile_h_
+#define TechDraw_DrawTile_h_
 
+#include <App/DocumentObject.h>
+#include <App/FeaturePython.h>
 #include <Mod/TechDraw/TechDrawGlobal.h>
 
-# include <App/DocumentObject.h>
-# include <App/FeaturePython.h>
-
 #include "DrawView.h"
+
 
 namespace TechDraw
 {
@@ -39,7 +39,7 @@ class TechDrawExport DrawTile : public App::DocumentObject
 
 public:
     DrawTile();
-    ~DrawTile() override;
+    ~DrawTile() = default;
 
     App::PropertyLink         TileParent;           //eg DrawWeldSymbol
     App::PropertyIntegerConstraint TileRow;

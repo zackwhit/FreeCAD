@@ -23,24 +23,21 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-#include <string>
-#include <QString>
-#include <QFont>
-#include <QColor>
-#include <QPen>
+# include <string>
+# include <QColor>
+# include <QFont>
+# include <QString>
 #endif
 
 #include <App/Application.h>
 #include <App/Material.h>
 #include <Base/Console.h>
-#include <Base/Exception.h>
 #include <Base/Parameter.h>
-#include <Base/Vector3D.h>
-
 #include <Mod/TechDraw/App/Preferences.h>
 
-#include "Rez.h"
 #include "PreferencesGui.h"
+#include "Rez.h"
+
 
 //getters for parameters used in multiple places.
 //ensure this is in sync with preference page user interfaces
@@ -171,7 +168,7 @@ double PreferencesGui::edgeFuzz()
     Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter().
                                          GetGroup("BaseApp")->GetGroup("Preferences")->
                                          GetGroup("Mod/TechDraw/General");
-    double result = hGrp->GetFloat("EdgeFuzz",10.0);
+    double result = hGrp->GetFloat("EdgeFuzz", 10.0);
     return result;
 }
 
@@ -184,13 +181,20 @@ Qt::PenStyle PreferencesGui::sectionLineStyle()
     return sectStyle;
 }
 
+bool PreferencesGui::sectionLineMarks()
+{
+    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter().
+                                         GetGroup("BaseApp")->GetGroup("Preferences")->
+                                         GetGroup("Mod/TechDraw/Decorations");
+    return hGrp->GetBool("SectionLineMarks", true);
+}
 
 QString PreferencesGui::weldingDirectory()
 {
     std::string defaultDir = App::Application::getResourceDir() + "Mod/TechDraw/Symbols/Welding/AWS/";
     Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter().GetGroup("BaseApp")->
                                          GetGroup("Preferences")->GetGroup("Mod/TechDraw/Files");
-                                    
+
     std::string symbolDir = hGrp->GetASCII("WeldingDir", defaultDir.c_str());
     if (symbolDir.empty()) {
         symbolDir = defaultDir;

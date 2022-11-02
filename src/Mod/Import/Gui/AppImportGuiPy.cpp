@@ -94,11 +94,14 @@
 #include <Gui/ViewProviderLink.h>
 #include <Mod/Import/App/ImportOCAF2.h>
 #include <Mod/Part/Gui/ViewProvider.h>
+#include <Mod/Part/App/OCAF/ImportExportSettings.h>
 #include <Mod/Part/App/encodeFilename.h>
 #include <Mod/Part/App/ImportIges.h>
 #include <Mod/Part/App/ImportStep.h>
+#include <Mod/Part/App/Interface.h>
 #include <Mod/Part/App/PartFeature.h>
 #include <Mod/Part/App/ProgressIndicator.h>
+#include <Mod/Part/Gui/DlgExportStep.h>
 
 #include <TDataStd.hxx>
 #include <TDataStd_Integer.hxx>
@@ -379,6 +382,9 @@ public:
         add_keyword_method("insert",&Module::insert,
             "insert(string,string) -- Insert the file into the given document."
         );
+        add_varargs_method("exportOptions",&Module::exportOptions,
+            "exportOptions(string) -- Return the export options of a file type."
+        );
         add_keyword_method("export",&Module::exporter,
             "export(list,string) -- Export a list of objects into a single file."
         );
@@ -418,13 +424,14 @@ private:
                 pcDoc = App::GetApplication().getDocument(DocName);
             }
             if (!pcDoc) {
-                pcDoc = App::GetApplication().newDocument("Unnamed");
+                pcDoc = App::GetApplication().newDocument();
             }
 
             Handle(XCAFApp_Application) hApp = XCAFApp_Application::GetApplication();
             Handle(TDocStd_Document) hDoc;
             hApp->NewDocument(TCollection_ExtendedString("MDTV-CAF"), hDoc);
             ImportOCAFExt ocaf(hDoc, pcDoc, file.fileNamePure());
+            ocaf.setImportOptions(ImportOCAFExt::customImportOptions());
             FC_TIME_INIT(t);
             FC_DURATION_DECL_INIT2(d1,d2);
 
@@ -553,21 +560,75 @@ private:
         return std::map<std::string,App::Color>();
     }
 
-    Py::Object exporter(const Py::Tuple& args, const Py::Dict &kwds)
+    Py::Object exportOptions(const Py::Tuple& args)
     {
-        PyObject* object;
         char* Name;
-        PyObject *exportHidden = Py_None;
-        PyObject *legacy = Py_None;
-        PyObject *keepPlacement = Py_None;
-        static char* kwd_list[] = {"obj", "name", "exportHidden", "legacy", "keepPlacement",nullptr};
-        if (!PyArg_ParseTupleAndKeywords(args.ptr(), kwds.ptr(), "Oet|O!O!O!",
-                    kwd_list,&object,"utf-8",&Name,&PyBool_Type,&exportHidden,&PyBool_Type,&legacy,&PyBool_Type,&keepPlacement))
+        if (!PyArg_ParseTuple(args.ptr(), "et", "utf-8", &Name))
             throw Py::Exception();
 
         std::string Utf8Name = std::string(Name);
         PyMem_Free(Name);
         std::string name8bit = Part::encodeFilename(Utf8Name);
+
+        Py::Dict options;
+        Base::FileInfo file(name8bit.c_str());
+
+        if (file.hasExtension("stp") || file.hasExtension("step")) {
+            PartGui::TaskExportStep dlg(Gui::getMainWindow());
+            if (!dlg.showDialog() || dlg.exec()) {
+                auto stepSettings = dlg.getSettings();
+                options.setItem("exportHidden", Py::Boolean(stepSettings.exportHidden));
+                options.setItem("keepPlacement", Py::Boolean(stepSettings.keepPlacement));
+                options.setItem("legacy", Py::Boolean(stepSettings.exportLegacy));
+            }
+        }
+
+        return options;
+    }
+
+    Py::Object exporter(const Py::Tuple& args, const Py::Dict &kwds)
+    {
+        PyObject* object;
+        char* Name;
+        PyObject *pyoptions = nullptr;
+        PyObject *pyexportHidden = Py_None;
+        PyObject *pylegacy = Py_None;
+        PyObject *pykeepPlacement = Py_None;
+        static char* kwd_list[] = {"obj", "name", "options", "exportHidden", "legacy", "keepPlacement", nullptr};
+        if (!PyArg_ParseTupleAndKeywords(args.ptr(), kwds.ptr(), "Oet|O!O!O!O!",
+                                         kwd_list, &object,
+                                         "utf-8", &Name,
+                                         &PyDict_Type, &pyoptions,
+                                         &PyBool_Type, &pyexportHidden,
+                                         &PyBool_Type, &pylegacy,
+                                         &PyBool_Type, &pykeepPlacement))
+            throw Py::Exception();
+
+        std::string Utf8Name = std::string(Name);
+        PyMem_Free(Name);
+        std::string name8bit = Part::encodeFilename(Utf8Name);
+
+        // determine export options
+        Part::OCAF::ImportExportSettings settings;
+
+        // still support old way
+        bool legacyExport = (pylegacy == Py_None ? settings.getExportLegacy() : Base::asBoolean(pylegacy));
+        bool exportHidden = (pyexportHidden == Py_None ? settings.getExportHiddenObject() : Base::asBoolean(pyexportHidden));
+        bool keepPlacement = (pykeepPlacement == Py_None ? settings.getExportKeepPlacement() : Base::asBoolean(pykeepPlacement));
+
+        // new way
+        if (pyoptions) {
+            Py::Dict options(pyoptions);
+            if (options.hasKey("legacy")) {
+                legacyExport = static_cast<bool>(Py::Boolean(options.getItem("legacy")));
+            }
+            if (options.hasKey("exportHidden")) {
+                exportHidden = static_cast<bool>(Py::Boolean(options.getItem("exportHidden")));
+            }
+            if (options.hasKey("keepPlacement")) {
+                keepPlacement = static_cast<bool>(Py::Boolean(options.getItem("keepPlacement")));
+            }
+        }
 
         try {
             Py::Sequence list(object);
@@ -582,21 +643,15 @@ private:
                     objs.push_back(static_cast<App::DocumentObjectPy*>(item)->getDocumentObjectPtr());
             }
 
-            if (legacy == Py_None) {
-                Part::ImportExportSettings settings;
-                legacy = settings.getExportLegacy() ? Py_True : Py_False;
-            }
-
             Import::ExportOCAF2 ocaf(hDoc, &getShapeColors);
-            if (!Base::asBoolean(legacy) || !ocaf.canFallback(objs)) {
-                if (exportHidden != Py_None)
-                    ocaf.setExportHiddenObject(Base::asBoolean(exportHidden));
-                if (keepPlacement != Py_None)
-                    ocaf.setKeepPlacement(Base::asBoolean(keepPlacement));
+            if (!legacyExport || !ocaf.canFallback(objs)) {
+                ocaf.setExportOptions(Import::ExportOCAF2::customExportOptions());
+                ocaf.setExportHiddenObject(exportHidden);
+                ocaf.setKeepPlacement(keepPlacement);
+
                 ocaf.exportObjects(objs);
             }
             else {
-                //bool keepExplicitPlacement = objs.size() > 1;
                 bool keepExplicitPlacement = Standard_True;
                 ExportOCAFGui ocaf(hDoc, keepExplicitPlacement);
                 // That stuff is exporting a list of selected objects into FreeCAD Tree
@@ -617,7 +672,7 @@ private:
                 ocaf.reallocateFreeShape(hierarchical_part,FreeLabels,part_id,Colors);
 
 #if OCC_VERSION_HEX >= 0x070200
-            // Update is not performed automatically anymore: https://tracker.dev.opencascade.org/view.php?id=28055
+                // Update is not performed automatically anymore: https://tracker.dev.opencascade.org/view.php?id=28055
                 XCAFDoc_DocumentTool::ShapeTool(hDoc->Main())->UpdateAssemblies();
 #endif
             }
@@ -625,13 +680,13 @@ private:
             Base::FileInfo file(Utf8Name.c_str());
             if (file.hasExtension("stp") || file.hasExtension("step")) {
                 ParameterGrp::handle hGrp_stp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Part/STEP");
-                std::string scheme = hGrp_stp->GetASCII("Scheme", Interface_Static::CVal("write.step.schema"));
+                std::string scheme = hGrp_stp->GetASCII("Scheme", Part::Interface::writeStepScheme());
                 std::list<std::string> supported = Part::supportedSTEPSchemes();
                 if (std::find(supported.begin(), supported.end(), scheme) != supported.end())
-                    Interface_Static::SetCVal("write.step.schema", scheme.c_str());
+                    Part::Interface::writeStepScheme(scheme.c_str());
 
                 STEPCAFControl_Writer writer;
-                Interface_Static::SetIVal("write.step.assembly",1);
+                Part::Interface::writeStepAssembly(Part::Interface::Assembly::On);
                 // writer.SetColorMode(Standard_False);
                 writer.Transfer(hDoc, STEPControl_AsIs);
 
@@ -657,9 +712,9 @@ private:
                 IGESControl_Controller::Init();
                 IGESCAFControl_Writer writer;
                 IGESData_GlobalSection header = writer.Model()->GlobalSection();
-                header.SetAuthorName(new TCollection_HAsciiString(Interface_Static::CVal("write.iges.header.author")));
-                header.SetCompanyName(new TCollection_HAsciiString(Interface_Static::CVal("write.iges.header.company")));
-                header.SetSendName(new TCollection_HAsciiString(Interface_Static::CVal("write.iges.header.product")));
+                header.SetAuthorName(new TCollection_HAsciiString(Part::Interface::writeIgesHeaderAuthor()));
+                header.SetCompanyName(new TCollection_HAsciiString(Part::Interface::writeIgesHeaderCompany()));
+                header.SetSendName(new TCollection_HAsciiString(Part::Interface::writeIgesHeaderProduct()));
                 writer.Model()->SetGlobalSection(header);
                 writer.Transfer(hDoc);
                 Standard_Boolean ret = writer.Write((const char*)name8bit.c_str());

@@ -88,6 +88,7 @@
 #include "GeometryPy.h"
 #include "ImportIges.h"
 #include "ImportStep.h"
+#include "Interface.h"
 #include "modelRefine.h"
 #include "OCCError.h"
 #include "PartFeature.h"
@@ -734,7 +735,7 @@ private:
 
         if (file.hasExtension("stp") || file.hasExtension("step")) {
             // create new document and add Import feature
-            App::Document *pcDoc = App::GetApplication().newDocument("Unnamed");
+            App::Document *pcDoc = App::GetApplication().newDocument();
 #if 1
             ImportStepParts(pcDoc,EncodedName.c_str());
 #else
@@ -745,7 +746,7 @@ private:
         }
 #if 1
         else if (file.hasExtension("igs") || file.hasExtension("iges")) {
-            App::Document *pcDoc = App::GetApplication().newDocument("Unnamed");
+            App::Document *pcDoc = App::GetApplication().newDocument();
             ImportIgesParts(pcDoc,EncodedName.c_str());
             pcDoc->recompute();
         }
@@ -1346,7 +1347,7 @@ private:
             error = "Different point and parameter";
             break;
         case BRepBuilderAPI_LineThroughIdenticPoints:
-            error = "Line through identic points";
+            error = "Line through identical points";
             break;
         }
         // Error
@@ -2029,7 +2030,14 @@ private:
 #if PY_VERSION_HEX < 0x03090000
             unichars = PyUnicode_AS_UNICODE(p);
 #else
+#ifdef FC_OS_WIN32
+            //PyUNICODE is only 16 bits on Windows (wchar_t), so passing 32 bit UCS4
+            //will result in unknown glyph in even positions, and wrong characters in
+            //odd positions.
+            unichars = (Py_UNICODE*)PyUnicode_AsWideCharString(p, &pysize);
+#else
             unichars = (Py_UNICODE *)PyUnicode_AsUCS4Copy(p);
+#endif
 #endif
         }
         else if (PyUnicode_Check(intext)) {
@@ -2038,7 +2046,14 @@ private:
 #if PY_VERSION_HEX < 0x03090000
             unichars = PyUnicode_AS_UNICODE(intext);
 #else
+#ifdef FC_OS_WIN32
+            //PyUNICODE is only 16 bits on Windows (wchar_t), so passing 32 bit UCS4
+            //will result in unknown glyph in even positions, and wrong characters in
+            //odd positions.
+            unichars = (Py_UNICODE*)PyUnicode_AsWideCharString(intext, &pysize);
+#else
             unichars = (Py_UNICODE *)PyUnicode_AsUCS4Copy(intext);
+#endif
 #endif
         }
         else {
@@ -2089,17 +2104,17 @@ private:
             throw Py::Exception();
 
         if (unit) {
-            if (!Interface_Static::SetCVal("write.iges.unit",unit)) {
+            if (!Interface::writeIgesUnit(unit)) {
                 throw Py::RuntimeError("Failed to set 'write.iges.unit'");
             }
-            if (!Interface_Static::SetCVal("write.step.unit",unit)) {
+            if (!Interface::writeStepUnit(unit)) {
                 throw Py::RuntimeError("Failed to set 'write.step.unit'");
             }
         }
 
         Py::Dict dict;
-        dict.setItem("write.iges.unit", Py::String(Interface_Static::CVal("write.iges.unit")));
-        dict.setItem("write.step.unit", Py::String(Interface_Static::CVal("write.step.unit")));
+        dict.setItem("write.iges.unit", Py::String(Interface::writeIgesUnit()));
+        dict.setItem("write.step.unit", Py::String(Interface::writeStepUnit()));
         return dict;
     }
     Py::Object setStaticValue(const Py::Tuple& args)
@@ -2264,7 +2279,7 @@ private:
             TopoDS_Shape* shape = new TopoDS_Shape();
             (*shape) = static_cast<TopoShapePy*>(pcObj)->getTopoShapePtr()->getShape();
             PyObject* proxy = nullptr;
-            proxy = Base::Interpreter().createSWIGPointerObj("OCC.TopoDS", "TopoDS_Shape *", (void*)shape, 1);
+            proxy = Base::Interpreter().createSWIGPointerObj("OCC.TopoDS", "TopoDS_Shape *", static_cast<void*>(shape), 1);
             return Py::asObject(proxy);
         }
         catch (const Base::Exception& e) {
@@ -2281,7 +2296,7 @@ private:
         try {
             TopoShape* shape = new TopoShape();
             Base::Interpreter().convertSWIGPointerObj("OCC.TopoDS","TopoDS_Shape *", proxy, &ptr, 0);
-            TopoDS_Shape* s = reinterpret_cast<TopoDS_Shape*>(ptr);
+            TopoDS_Shape* s = static_cast<TopoDS_Shape*>(ptr);
             shape->setShape(*s);
             return Py::asObject(new TopoShapePy(shape));
         }

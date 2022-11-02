@@ -25,6 +25,8 @@
 #ifndef _PreComp_
 # include <QMessageBox>
 # include <QPushButton>
+# include <QRegularExpression>
+# include <QRegularExpressionMatch>
 #endif
 
 #include "DlgCreateNewPreferencePackImp.h"
@@ -46,8 +48,8 @@ DlgCreateNewPreferencePackImp::DlgCreateNewPreferencePackImp(QWidget* parent)
 {
     ui->setupUi(this);
 
-    QRegExp validNames(QString::fromUtf8("[^/\\\\?%*:|\"<>]+"));
-    _nameValidator.setRegExp(validNames);
+    QRegularExpression validNames(QString::fromUtf8("[^/\\\\?%*:|\"<>]+"));
+    _nameValidator.setRegularExpression(validNames);
     ui->lineEdit->setValidator(&_nameValidator);
     ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
     connect(ui->treeWidget, &QTreeWidget::itemChanged, this, &DlgCreateNewPreferencePackImp::onItemChanged);

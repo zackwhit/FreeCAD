@@ -20,14 +20,13 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _TechDraw_DrawLeaderLine_h_
-#define _TechDraw_DrawLeaderLine_h_
+#ifndef TechDraw_DrawLeaderLine_h_
+#define TechDraw_DrawLeaderLine_h_
 
+#include <App/DocumentObject.h>
+#include <App/FeaturePython.h>
+#include <App/PropertyLinks.h>
 #include <Mod/TechDraw/TechDrawGlobal.h>
-
-# include <App/DocumentObject.h>
-# include <App/FeaturePython.h>
-# include <App/PropertyLinks.h>
 
 #include "DrawView.h"
 
@@ -41,7 +40,7 @@ class TechDrawExport DrawLeaderLine : public TechDraw::DrawView
 
 public:
     DrawLeaderLine();
-    ~DrawLeaderLine() override;
+    ~DrawLeaderLine() = default;
 
     App::PropertyLink         LeaderParent;
     App::PropertyVectorList   WayPoints;
@@ -61,7 +60,7 @@ public:
         return "TechDrawGui::ViewProviderLeader";
     }
     PyObject *getPyObject() override;
-    QRectF getRect() const override { return QRectF(0,0,1,1);}
+    QRectF getRect() const override { return { 0, 0,1, 1}; }
 
     Base::Vector3d getAttachPoint();
     DrawView* getBaseView() const;
@@ -80,9 +79,6 @@ protected:
     void onChanged(const App::Property* prop) override;
 
 private:
-/*    static const char* ArrowTypeEnums[];*/
-/*    static const int   ArrowCount;*/
-/*    static const std::vector<std::string> ArrowTypeIcons;*/
 
 
 };

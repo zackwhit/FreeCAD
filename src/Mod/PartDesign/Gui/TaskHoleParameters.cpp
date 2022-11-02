@@ -46,9 +46,7 @@ namespace bp = boost::placeholders;
 #if 0 // needed for Qt's lupdate utility
     qApp->translate("PartDesignGui::TaskHoleParameters", "Counterbore");
     qApp->translate("PartDesignGui::TaskHoleParameters", "Countersink");
-    qApp->translate("PartDesignGui::TaskHoleParameters", "Cheesehead (deprecated)");
-    qApp->translate("PartDesignGui::TaskHoleParameters", "Countersink socket screw (deprecated)");
-    qApp->translate("PartDesignGui::TaskHoleParameters", "Cap screw (deprecated)");
+    qApp->translate("PartDesignGui::TaskHoleParameters", "Counterdrill");
 #endif
 
 TaskHoleParameters::TaskHoleParameters(ViewProviderHole* HoleView, QWidget* parent)
@@ -342,14 +340,13 @@ void TaskHoleParameters::holeCutTypeChanged(int index)
     // the HoleCutDepth is something different for countersinks and counterbores
     // therefore reset it, it will be reset to sensible values by setting the new HoleCutType
     pcHole->HoleCutDepth.setValue(0.0);
+    pcHole->HoleCutType.setValue(index);
 
     // when holeCutType was changed, reset HoleCutCustomValues to false because it should
     // be a purpose decision to overwrite the normed values
     // we will handle the case that there is no normed value later in this routine
     ui->HoleCutCustomValues->setChecked(false);
     pcHole->HoleCutCustomValues.setValue(false);
-
-    pcHole->HoleCutType.setValue(index);
 
     // recompute to get the info about the HoleCutType properties
     recomputeFeature();
@@ -363,7 +360,7 @@ void TaskHoleParameters::holeCutTypeChanged(int index)
     // the type is a countersink and thus if HoleCutCountersinkAngle can be enabled
     std::string HoleCutTypeString = pcHole->HoleCutType.getValueAsString();
     if (HoleCutTypeString == "None" || HoleCutTypeString == "Counterbore"
-        || HoleCutTypeString == "Countersink") {
+        || HoleCutTypeString == "Countersink" || HoleCutTypeString == "Counterdrill") {
         ui->HoleCutCustomValues->setEnabled(false);
         if (HoleCutTypeString == "None") {
             ui->HoleCutDiameter->setEnabled(false);
@@ -425,8 +422,9 @@ void TaskHoleParameters::holeCutDiameterChanged(double value)
 void TaskHoleParameters::holeCutDepthChanged(double value)
 {
     PartDesign::Hole* pcHole = static_cast<PartDesign::Hole*>(vp->getObject());
+    std::string HoleCutTypeString = pcHole->HoleCutType.getValueAsString();
 
-    if (ui->HoleCutCountersinkAngle->isEnabled()) {
+    if (ui->HoleCutCountersinkAngle->isEnabled() && HoleCutTypeString != "Counterdrill") {
         // we have a countersink and recalculate the HoleCutDiameter
 
         // store current depth

@@ -20,15 +20,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _TechDraw_DrawHatch_h_
-#define _TechDraw_DrawHatch_h_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef TechDraw_DrawHatch_h_
+#define TechDraw_DrawHatch_h_
 
 #include <App/DocumentObject.h>
 #include <App/FeaturePython.h>
 #include <App/PropertyFile.h>
-#include <App/PropertyLinks.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
+
 
 namespace App {
 class Color;
@@ -44,7 +43,7 @@ class TechDrawExport DrawHatch : public App::DocumentObject
 
 public:
     DrawHatch();
-    ~DrawHatch() override;
+    ~DrawHatch() = default;
 
     App::PropertyLinkSub     Source;       // the dvp & face this hatch belongs to
     App::PropertyFile        HatchPattern;
@@ -66,10 +65,10 @@ public:
     bool removeSub(std::string toRemove);
     bool removeSub(int i);
     bool empty();
-    static bool faceIsHatched(int i,std::vector<TechDraw::DrawHatch*> hatchObjs);
+    static bool faceIsHatched(int i, std::vector<TechDraw::DrawHatch*> hatchObjs);
     static std::string prefSvgHatch();
     static App::Color prefSvgHatchColor();
-    
+
     bool isSvgHatch() const;
     bool isBitmapHatch() const;
 

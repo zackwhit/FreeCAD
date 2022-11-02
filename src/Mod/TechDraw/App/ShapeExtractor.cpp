@@ -24,39 +24,28 @@
 
 #ifndef _PreComp_
 # include <sstream>
+# include <BRep_Builder.hxx>
+# include <BRepAlgoAPI_Fuse.hxx>
+# include <BRepTools.hxx>
+# include <TopoDS.hxx>
+# include <TopoDS_Iterator.hxx>
+# include <TopoDS_Vertex.hxx>
 #endif
-
-#include <BRep_Builder.hxx>
-#include <BRepAlgoAPI_Fuse.hxx>
-#include <BRepBuilderAPI_Copy.hxx>
-#include <BRepTools.hxx>
-#include <TopExp.hxx>
-#include <TopExp_Explorer.hxx>
-#include <TopoDS_Vertex.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Edge.hxx>
 
 #include <App/Application.h>
 #include <App/Document.h>
 #include <App/GroupExtension.h>
-#include <App/Part.h>
 #include <App/Link.h>
-
-#include <Base/BoundBox.h>
+#include <App/Part.h>
 #include <Base/Console.h>
-#include <Base/Exception.h>
-#include <Base/FileInfo.h>
 #include <Base/Parameter.h>
 #include <Base/Placement.h>
-
 #include <Mod/Part/App/PartFeature.h>
 #include <Mod/Part/App/PrimitiveFeature.h>
-#include <Mod/Part/App/FeaturePartCircle.h>
-#include <Mod/Part/App/TopoShape.h>
-#include <Mod/Part/App/PropertyTopoShape.h>
 
 #include "ShapeExtractor.h"
 #include "DrawUtil.h"
+
 
 using namespace TechDraw;
 
@@ -119,7 +108,7 @@ TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> l
                 sourceShapes.push_back(shape);
             } else {
                 std::vector<TopoDS_Shape> shapeList = getShapesFromObject(l);
-                sourceShapes.insert(sourceShapes.end(),shapeList.begin(),shapeList.end());
+                sourceShapes.insert(sourceShapes.end(), shapeList.begin(), shapeList.end());
             }
         }
     }
@@ -265,7 +254,7 @@ std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromObject(const App::Documen
         for (auto& d: objs) {
             shapes = getShapesFromObject(d);
             if (!shapes.empty()) {
-                result.insert(result.end(),shapes.begin(),shapes.end());
+                result.insert(result.end(), shapes.begin(), shapes.end());
             }
         }
     //the next 2 bits are mostly for Arch module objects
@@ -277,7 +266,7 @@ std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromObject(const App::Documen
             for (auto& d: objs) {
                 shapes = getShapesFromObject(d);
                 if (!shapes.empty()) {
-                    result.insert(result.end(),shapes.begin(),shapes.end());
+                    result.insert(result.end(), shapes.begin(), shapes.end());
                 }
             }
         } else {

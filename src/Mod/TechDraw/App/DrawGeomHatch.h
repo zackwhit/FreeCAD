@@ -20,15 +20,15 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _TechDraw_DrawGeomHatch_h_
-#define _TechDraw_DrawGeomHatch_h_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef TechDraw_DrawGeomHatch_h_
+#define TechDraw_DrawGeomHatch_h_
 
 #include <App/DocumentObject.h>
 #include <App/FeaturePython.h>
 #include <App/PropertyFile.h>
-#include <App/PropertyLinks.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
+
+#include "HatchLine.h"
 
 
 class TopoDS_Edge;
@@ -54,7 +54,7 @@ class TechDrawExport DrawGeomHatch : public App::DocumentObject
 
 public:
     DrawGeomHatch();
-    virtual ~DrawGeomHatch();
+    ~DrawGeomHatch() = default;
 
     App::PropertyLinkSub     Source;                                   //the dvX & face(s) this crosshatch belongs to
     App::PropertyFile        FilePattern;

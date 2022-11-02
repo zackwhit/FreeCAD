@@ -19,14 +19,12 @@ set(Mesh_LIBS
     FreeCADApp
 )
 
-if (BUILD_QT5)
-    include_directories(
-        ${Qt5Concurrent_INCLUDE_DIRS}
-    )
-    list(APPEND Mesh_LIBS
-        ${Qt5Concurrent_LIBRARIES}
-    )
-endif()
+include_directories(
+    ${QtConcurrent_INCLUDE_DIRS}
+)
+list(APPEND Mesh_LIBS
+    ${QtConcurrent_LIBRARIES}
+)
 
 generate_from_xml(EdgePy)
 generate_from_xml(FacetPy)
@@ -100,8 +98,14 @@ SET(Core_SRCS
     Core/CylinderFit.h
     Core/SphereFit.cpp
     Core/SphereFit.h
+    Core/IO/Reader3MF.cpp
+    Core/IO/Reader3MF.h
+    Core/IO/ReaderOBJ.cpp
+    Core/IO/ReaderOBJ.h
     Core/IO/Writer3MF.cpp
     Core/IO/Writer3MF.h
+    Core/IO/WriterOBJ.cpp
+    Core/IO/WriterOBJ.h
 )
 SOURCE_GROUP("Core" FILES ${Core_SRCS})
 

@@ -53,6 +53,8 @@
 # include <Inventor/SbVec3f.h>
 # include <Inventor/SbImage.h>
 
+# include <QRegularExpression>
+
 # include <memory>
 #endif  // #ifndef _PreComp_
 
@@ -143,6 +145,8 @@ void EditModeConstraintCoinManager::updateVirtualSpace()
 void EditModeConstraintCoinManager::processConstraints(const GeoListFacade & geolistfacade)
 {
     const auto &constrlist = ViewProviderSketchCoinAttorney::getConstraints(viewProvider);
+
+    auto zConstrH = ViewProviderSketchCoinAttorney::getViewOrientationFactor(viewProvider) * drawingParameters.zConstr;
 
     // After an undo/redo it can happen that we have an empty geometry list but a non-empty constraint list
     // In this case just ignore the constraints. (See bug #0000421)
@@ -337,7 +341,7 @@ Restart:
 
                             auto translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::FirstTranslationIndex)));
 
-                            translation->abPos = SbVec3f(midpos.x, midpos.y, drawingParameters.zConstr); //Absolute Reference
+                            translation->abPos = SbVec3f(midpos.x, midpos.y, zConstrH); //Absolute Reference
 
                             //Reference Position that is scaled according to zoom
                             translation->translation = SbVec3f(relpos.x, relpos.y, 0);
@@ -361,7 +365,7 @@ Restart:
 
                             auto translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::FirstTranslationIndex)));
 
-                            translation->abPos = SbVec3f(midpos1.x, midpos1.y, drawingParameters.zConstr);
+                            translation->abPos = SbVec3f(midpos1.x, midpos1.y, zConstrH);
                             translation->translation = SbVec3f(relpos1.x, relpos1.y, 0);
 
                             Base::Vector3d relpos2 = seekConstraintPosition(midpos2, norm2, dir2, 4.0,  editModeScenegraphNodes.constrGroup->getChild(i));
@@ -370,7 +374,7 @@ Restart:
 
                             translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::SecondTranslationIndex)));
 
-                            translation->abPos = SbVec3f(secondPos.x, secondPos.y, drawingParameters.zConstr);
+                            translation->abPos = SbVec3f(secondPos.x, secondPos.y, zConstrH);
                             translation->translation = SbVec3f(relpos2.x -relpos1.x, relpos2.y -relpos1.y, 0);
                         }
                     }
@@ -466,7 +470,7 @@ Restart:
 
                         auto translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::FirstTranslationIndex)));
 
-                        translation->abPos = SbVec3f(midpos1.x, midpos1.y, drawingParameters.zConstr);
+                        translation->abPos = SbVec3f(midpos1.x, midpos1.y, zConstrH);
                         translation->translation = SbVec3f(relpos1.x, relpos1.y, 0);
 
                         if (twoIcons) {
@@ -474,7 +478,7 @@ Restart:
 
                             Base::Vector3d secondPos = midpos2 - midpos1;
                             auto translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::SecondTranslationIndex)));
-                            translation->abPos = SbVec3f(secondPos.x, secondPos.y, drawingParameters.zConstr);
+                            translation->abPos = SbVec3f(secondPos.x, secondPos.y, zConstrH);
                             translation->translation = SbVec3f(relpos2.x -relpos1.x, relpos2.y -relpos1.y, 0);
                         }
 
@@ -660,7 +664,7 @@ Restart:
 
                         auto translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::FirstTranslationIndex)));
 
-                        translation->abPos = SbVec3f(midpos1.x, midpos1.y, drawingParameters.zConstr); //Absolute Reference
+                        translation->abPos = SbVec3f(midpos1.x, midpos1.y, zConstrH); //Absolute Reference
 
                         //Reference Position that is scaled according to zoom
                         translation->translation = SbVec3f(relpos1.x, relpos1.y, 0);
@@ -669,7 +673,7 @@ Restart:
 
                         translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::SecondTranslationIndex)));
 
-                        translation->abPos = SbVec3f(secondPos.x, secondPos.y, drawingParameters.zConstr); //Absolute Reference
+                        translation->abPos = SbVec3f(secondPos.x, secondPos.y, zConstrH); //Absolute Reference
 
                         //Reference Position that is scaled according to zoom
                         translation->translation = SbVec3f(relpos2.x - relpos1.x, relpos2.y -relpos1.y, 0);
@@ -728,8 +732,8 @@ Restart:
                         asciiText->pnts.setNum(2);
                         SbVec3f *verts = asciiText->pnts.startEditing();
 
-                        verts[0] = SbVec3f (pnt1.x, pnt1.y, drawingParameters.zConstr);
-                        verts[1] = SbVec3f (pnt2.x, pnt2.y, drawingParameters.zConstr);
+                        verts[0] = SbVec3f (pnt1.x, pnt1.y, zConstrH);
+                        verts[1] = SbVec3f (pnt2.x, pnt2.y, zConstrH);
 
                         asciiText->pnts.finishEditing();
 
@@ -781,7 +785,7 @@ Restart:
 
                             auto translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::FirstTranslationIndex)));
 
-                            translation->abPos = SbVec3f(pos.x, pos.y, drawingParameters.zConstr); //Absolute Reference
+                            translation->abPos = SbVec3f(pos.x, pos.y, zConstrH); //Absolute Reference
                             translation->translation = SbVec3f(relPos.x, relPos.y, 0);
                         }
                         else if (Constr->Type == Tangent) {
@@ -806,14 +810,14 @@ Restart:
 
                                 auto translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::FirstTranslationIndex)));
 
-                                translation->abPos = SbVec3f(midpos1.x, midpos1.y, drawingParameters.zConstr); //Absolute Reference
+                                translation->abPos = SbVec3f(midpos1.x, midpos1.y, zConstrH); //Absolute Reference
                                 translation->translation = SbVec3f(relpos1.x, relpos1.y, 0);
 
                                 Base::Vector3d secondPos = midpos2 - midpos1;
 
                                 translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::SecondTranslationIndex)));
 
-                                translation->abPos = SbVec3f(secondPos.x, secondPos.y, drawingParameters.zConstr); //Absolute Reference
+                                translation->abPos = SbVec3f(secondPos.x, secondPos.y, zConstrH); //Absolute Reference
                                 translation->translation = SbVec3f(relpos2.x -relpos1.x, relpos2.y -relpos1.y, 0);
 
                                 break;
@@ -895,7 +899,7 @@ Restart:
                             }
                             auto translation = static_cast<SoZoomTranslation *>(sep->getChild(static_cast<int>(ConstraintNodePosition::FirstTranslationIndex)));
 
-                            translation->abPos = SbVec3f(pos.x, pos.y, drawingParameters.zConstr); //Absolute Reference
+                            translation->abPos = SbVec3f(pos.x, pos.y, zConstrH); //Absolute Reference
                             translation->translation = SbVec3f(relPos.x, relPos.y, 0);
                         }
                     }
@@ -908,8 +912,8 @@ Restart:
                         Base::Vector3d pnt1 = geolistfacade.getPoint(Constr->First, Constr->FirstPos);
                         Base::Vector3d pnt2 = geolistfacade.getPoint(Constr->Second, Constr->SecondPos);
 
-                        SbVec3f p1(pnt1.x, pnt1.y, drawingParameters.zConstr);
-                        SbVec3f p2(pnt2.x, pnt2.y, drawingParameters.zConstr);
+                        SbVec3f p1(pnt1.x, pnt1.y, zConstrH);
+                        SbVec3f p2(pnt2.x, pnt2.y, zConstrH);
                         SbVec3f dir = (p2-p1);
                         dir.normalize();
                         SbVec3f norm (-dir[1],dir[0],0);
@@ -1086,8 +1090,8 @@ Restart:
                         } else
                             break;
 
-                        SbVec3f p1(pnt1.x, pnt1.y, drawingParameters.zConstr);
-                        SbVec3f p2(pnt2.x, pnt2.y, drawingParameters.zConstr);
+                        SbVec3f p1(pnt1.x, pnt1.y, zConstrH);
+                        SbVec3f p2(pnt2.x, pnt2.y, zConstrH);
 
                         SoDatumLabel *asciiText = static_cast<SoDatumLabel *>(sep->getChild(static_cast<int>(ConstraintNodePosition::DatumLabelIndex)));
 
@@ -1149,8 +1153,8 @@ Restart:
                         } else
                             break;
 
-                        SbVec3f p1(pnt1.x, pnt1.y, drawingParameters.zConstr);
-                        SbVec3f p2(pnt2.x, pnt2.y, drawingParameters.zConstr);
+                        SbVec3f p1(pnt1.x, pnt1.y, zConstrH);
+                        SbVec3f p2(pnt2.x, pnt2.y, zConstrH);
 
                         SoDatumLabel *asciiText = static_cast<SoDatumLabel *>(sep->getChild(static_cast<int>(ConstraintNodePosition::DatumLabelIndex)));
 
@@ -1667,7 +1671,7 @@ QString EditModeConstraintCoinManager::getPresentationString(const Constraint *c
             if (QString::compare(baseUnitStr, unitStr)==0)
             {
                 // Example code from: Mod/TechDraw/App/DrawViewDimension.cpp:372
-                QRegExp rxUnits(QString::fromUtf8(" \\D*$"));  //space + any non digits at end of string
+                QRegularExpression rxUnits(QString::fromUtf8(" \\D*$"));  //space + any non digits at end of string
                 valueStr.remove(rxUnits);                      //getUserString(defaultDecimals) without units
             }
         }
@@ -2364,18 +2368,24 @@ void EditModeConstraintCoinManager::clearCoinImage(SoImage *soImagePtr)
 
 QColor EditModeConstraintCoinManager::constrColor(int constraintId)
 {
+    auto toQColor = [](auto sbcolor) -> QColor {
+        return QColor(  (int)(sbcolor[0] * 255.0f),
+                        (int)(sbcolor[1] * 255.0f),
+                        (int)(sbcolor[2] * 255.0f));
+    };
+
     const auto constraints = ViewProviderSketchCoinAttorney::getConstraints(viewProvider);
 
     if (ViewProviderSketchCoinAttorney::isConstraintPreselected(viewProvider,constraintId))
-        return drawingParameters.constrIconPreselColor;
+        return toQColor(drawingParameters.PreselectColor);
     else if (ViewProviderSketchCoinAttorney::isConstraintSelected(viewProvider, constraintId))
-        return drawingParameters.constrIconSelColor;
+        return toQColor(drawingParameters.SelectColor);
     else if (!constraints[constraintId]->isActive)
-        return drawingParameters.constrIconDisabledColor;
+        return toQColor(drawingParameters.DeactivatedConstrDimColor);
     else if (!constraints[constraintId]->isDriving)
-        return drawingParameters.nonDrivingConstrIcoColor;
+        return toQColor(drawingParameters.NonDrivingConstrDimColor);
     else
-        return drawingParameters.constrIcoColor;
+        return toQColor(drawingParameters.ConstrIcoColor);
 
 }
 

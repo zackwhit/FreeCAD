@@ -23,27 +23,25 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+# include <sstream>
+# include <QLocale>
+# include <boost/tokenizer.hpp>
+# include <boost/algorithm/string/predicate.hpp>
 #endif
 
-#include <QLocale>
-
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/replace.hpp>
-#include "Cell.h"
-#include "Utils.h"
-#include <boost/tokenizer.hpp>
-#include <Base/Reader.h>
+#include <App/ExpressionParser.h>
+#include <Base/Console.h>
 #include <Base/Quantity.h>
+#include <Base/Reader.h>
 #include <Base/Tools.h>
 #include <Base/UnitsApi.h>
 #include <Base/Writer.h>
-#include <Base/Console.h>
-#include <App/ExpressionParser.h>
-#include "Sheet.h"
-#include <iomanip>
-#include <cctype>
 
-FC_LOG_LEVEL_INIT("Spreadsheet",true,true)
+#include "Cell.h"
+#include "Sheet.h"
+
+
+FC_LOG_LEVEL_INIT("Spreadsheet", true, true)
 
 #ifdef _MSC_VER
 #define __func__ __FUNCTION__
@@ -82,7 +80,6 @@ const int Cell::MARK_SET             = 0x40000000;
 const int Cell::EXCEPTION_SET        = 0x20000000;
 const int Cell::PARSE_EXCEPTION_SET  = 0x80000000;
 const int Cell::RESOLVE_EXCEPTION_SET= 0x01000000;
-const int Cell::SPANS_UPDATED        = 0x10000000;
 
 /* Alignment */
 const int Cell::ALIGNMENT_LEFT       = 0x01;
@@ -621,7 +618,6 @@ void Cell::setSpans(int rows, int columns)
         rowSpan = (rows == -1 ? 1 : rows);
         colSpan = (columns == -1 ? 1 : columns);
         setUsed(SPANS_SET, (rowSpan != 1 || colSpan != 1) );
-        setUsed(SPANS_UPDATED);
         setDirty();
         signaller.tryInvoke();
     }

@@ -20,18 +20,16 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _DrawViewDetail_h_
-#define _DrawViewDetail_h_
-
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#ifndef DrawViewDetail_h_
+#define DrawViewDetail_h_
 
 #include <gp_Ax2.hxx>
 #include <TopoDS_Shape.hxx>
 
 #include <App/DocumentObject.h>
-#include <App/PropertyLinks.h>
 #include <App/FeaturePython.h>
-#include <Base/Vector3D.h>
+#include <App/PropertyLinks.h>
+#include <Mod/TechDraw/TechDrawGlobal.h>
 
 #include "DrawViewPart.h"
 

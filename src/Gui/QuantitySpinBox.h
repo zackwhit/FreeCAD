@@ -108,6 +108,7 @@ public:
 
     /// Gets the expression as a string
     QString expressionText() const;
+    void evaluateExpression();
 
     /// Set the number portion selected
     void selectNumber();
@@ -145,6 +146,7 @@ protected Q_SLOTS:
 protected:
     void setExpression(std::shared_ptr<App::Expression> expr) override;
     void openFormulaDialog() override;
+    void showIcon() override;
     StepEnabled stepEnabled() const override;
     void showEvent(QShowEvent * event) override;
     void hideEvent(QHideEvent * event) override;
@@ -156,7 +158,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
-    void validateInput();
+    void validateInput() override;
     void updateText(const Base::Quantity&);
     void updateFromCache(bool notify, bool updateUnit = true);
     QString getUserString(const Base::Quantity& val, double& factor, QString& unitString) const;

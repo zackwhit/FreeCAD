@@ -37,7 +37,6 @@
 # include <QPrintPreviewDialog>
 # include <QSpacerItem>
 # include <QStyle>
-# include <QTextCodec>
 # include <QTextCursor>
 # include <QTextDocument>
 # include <QTextStream>
@@ -66,7 +65,7 @@ public:
     QString fileName;
     EditorView::DisplayName displayName;
     QTimer*  activityTimer;
-    uint timeStamp;
+    qint64 timeStamp;
     bool lock;
     bool aboutToClose;
     QStringList undos;
@@ -110,11 +109,11 @@ EditorView::EditorView(QPlainTextEdit* editor, QWidget* parent)
     connect(editor, SIGNAL(findPrevious()), d->searchBar, SLOT(findPrevious()));
 
     // Create the layout containing the workspace and a tab bar
-    QFrame* hbox = new QFrame(this);
+    auto hbox = new QFrame(this);
     hbox->setFrameShape(QFrame::StyledPanel);
     hbox->setFrameShadow(QFrame::Sunken);
-    QVBoxLayout* layout = new QVBoxLayout();
-    layout->setMargin(1);
+    auto layout = new QVBoxLayout();
+    layout->setContentsMargins(1, 1, 1, 1);
     layout->addWidget(d->textEdit);
     layout->addWidget(d->searchBar);
     d->textEdit->setParent(hbox);
@@ -192,7 +191,7 @@ void EditorView::OnChange(Base::Subject<const char*> &rCaller,const char* rcReas
 void EditorView::checkTimestamp()
 {
     QFileInfo fi(d->fileName);
-    uint timeStamp =  fi.lastModified().toTime_t();
+    qint64 timeStamp =  fi.lastModified().toSecsSinceEpoch();
     if (timeStamp != d->timeStamp) {
         switch( QMessageBox::question( this, tr("Modified file"),
                 tr("%1.\n\nThis has been modified outside of the source editor. Do you want to reload it?").arg(d->fileName),
@@ -370,7 +369,7 @@ bool EditorView::open(const QString& fileName)
     file.close();
 
     QFileInfo fi(fileName);
-    d->timeStamp =  fi.lastModified().toTime_t();
+    d->timeStamp =  fi.lastModified().toSecsSinceEpoch();
     d->activityTimer->setSingleShot(true);
     d->activityTimer->start(3000);
 
@@ -523,13 +522,15 @@ bool EditorView::saveFile()
     if (!file.open(QFile::WriteOnly))
         return false;
     QTextStream ts(&file);
-    ts.setCodec(QTextCodec::codecForName("UTF-8"));
+#if QT_VERSION < 0x060000
+    ts.setCodec("UTF-8");
+#endif
     ts << d->textEdit->document()->toPlainText();
     file.close();
     d->textEdit->document()->setModified(false);
 
     QFileInfo fi(d->fileName);
-    d->timeStamp =  fi.lastModified().toTime_t();
+    d->timeStamp =  fi.lastModified().toSecsSinceEpoch();
     return true;
 }
 

@@ -58,30 +58,23 @@ class TaskRichAnno : public QWidget
 public:
     TaskRichAnno(TechDraw::DrawView* baseFeat,
                  TechDraw::DrawPage* page);
-    explicit TaskRichAnno(TechDrawGui::ViewProviderRichAnno* leadVP);
-    ~TaskRichAnno() override;
+    explicit TaskRichAnno(TechDrawGui::ViewProviderRichAnno* annoVP);
+    ~TaskRichAnno() = default;
 
-public Q_SLOTS:
-    void onEditorClicked(bool b);
-/*    void onViewPicked(QPointF pos, QGIView* qgParent);*/
-
-public:
     virtual bool accept();
     virtual bool reject();
-    virtual void setCreateMode(bool b) { m_createMode = b; }
+    virtual void setCreateMode(bool mode) { m_createMode = mode; }
     virtual bool getCreateMode() { return m_createMode; }
     void updateTask();
     void saveButtons(QPushButton* btnOK,
                      QPushButton* btnCancel);
-    void enableTaskButtons(bool b);
+    void enableTaskButtons(bool enable);
 
-
-protected Q_SLOTS:
-    void onSaveAndExit(QString);
-    void onEditorExit();
+public Q_SLOTS:
+    void onEditorClicked(bool clicked);
 
 protected:
-    void changeEvent(QEvent *e) override;
+    void changeEvent(QEvent *event) override;
 
     void createAnnoFeature();
     void updateAnnoFeature();
@@ -90,17 +83,19 @@ protected:
 
     QPointF calcTextStartPos(double scale);
 
-    void blockButtons(bool b);
     void setUiPrimary();
     void setUiEdit();
-    void enableTextUi(bool b);
-    void enableVPUi(bool b);
+    void enableTextUi(bool enable);
+    void enableVPUi(bool enable);
     double prefWeight() const;
     App::Color prefLineColor();
 
+protected Q_SLOTS:
+    void onSaveAndExit(QString);
+    void onEditorExit();
+
 private:
     std::unique_ptr<Ui_TaskRichAnno> ui;
-    bool blockUpdate;
 
     ViewProviderPage* m_vpp;
     ViewProviderRichAnno* m_annoVP;
@@ -111,17 +106,14 @@ private:
     std::string m_qgParentName;
 
     Base::Vector3d m_attachPoint;
-    
-    bool m_createMode;
-    QGMText* m_text;
 
-    Qt::ContextMenuPolicy  m_saveContextPolicy;
+    bool m_createMode;
+
     bool m_inProgressLock;
 
-    QGIRichAnno* m_qgAnno;
     QPushButton* m_btnOK;
     QPushButton* m_btnCancel;
-    
+
     QDialog* m_textDialog;
     MRichTextEdit* m_rte;
     QString m_title;
@@ -134,7 +126,7 @@ class TaskDlgRichAnno : public Gui::TaskView::TaskDialog
 public:
     TaskDlgRichAnno(TechDraw::DrawView* baseFeat,
                     TechDraw::DrawPage* page);
-    explicit TaskDlgRichAnno(TechDrawGui::ViewProviderRichAnno* leadVP);
+    explicit TaskDlgRichAnno(TechDrawGui::ViewProviderRichAnno* annoVP);
     ~TaskDlgRichAnno() override;
 
 public:
@@ -147,7 +139,6 @@ public:
     /// is called by the framework if the dialog is rejected (Cancel)
     bool reject() override;
     /// is called by the framework if the user presses the help button
-    void helpRequested() override { return;}
     bool isAllowedAlterDocument() const override
                         { return false; }
     void update();

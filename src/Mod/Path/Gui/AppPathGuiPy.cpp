@@ -82,7 +82,7 @@ private:
 
         try {
             std::string path = App::Application::getHomePath();
-            path += "Mod/Path/PathScripts/post/";
+            path += "Mod/Path/Path/Post/scripts/";
             QDir dir1(QString::fromUtf8(path.c_str()), QString::fromLatin1("*_pre.py"));
             std::string cMacroPath = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Macro")
                 ->GetASCII("MacroPath",App::Application::getUserMacroDir().c_str());
@@ -104,7 +104,7 @@ private:
             std::ostringstream pre;
             std::ostringstream cmd;
             if (processor.empty()) {
-                App::Document *pcDoc = App::GetApplication().newDocument("Unnamed");
+                App::Document *pcDoc = App::GetApplication().newDocument();
                 Gui::Command::runCommand(Gui::Command::Gui,"import Path");
                 cmd << "Path.read(\"" << EncodedName << "\",\"" << pcDoc->getName() << "\")";
                 Gui::Command::runCommand(Gui::Command::Gui,cmd.str().c_str());
@@ -113,7 +113,7 @@ private:
                     QFileInfo fileInfo = list.at(i);
                     if (fileInfo.baseName().toStdString() == processor) {
                         if (fileInfo.absoluteFilePath().contains(QString::fromLatin1("PathScripts"))) {
-                            pre << "from PathScripts.post import " << processor;
+                            pre << "from Path.Post.scripts import " << processor;
                         } else {
                             pre << "import " << processor;
                         }
@@ -149,7 +149,7 @@ private:
 
         try {
             std::string path = App::Application::getHomePath();
-            path += "Mod/Path/PathScripts/post/";
+            path += "Mod/Path/Path/Post/scripts/";
             QDir dir1(QString::fromUtf8(path.c_str()), QString::fromLatin1("*_pre.py"));
             std::string cMacroPath = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Macro")
                 ->GetASCII("MacroPath",App::Application::getUserMacroDir().c_str());
@@ -189,7 +189,7 @@ private:
                     QFileInfo fileInfo = list.at(i);
                     if (fileInfo.baseName().toStdString() == processor) {
                         if (fileInfo.absoluteFilePath().contains(QString::fromLatin1("PathScripts"))) {
-                            pre << "from PathScripts.post import " << processor;
+                            pre << "from Path.Post.scripts import " << processor;
                         } else {
                             pre << "import " << processor;
                         }
@@ -225,7 +225,7 @@ private:
                 throw Py::RuntimeError("No object to export");
 
             std::string path = App::Application::getHomePath();
-            path += "Mod/Path/PathScripts/post/";
+            path += "Mod/Path/Path/Post/scripts/";
             QDir dir1(QString::fromUtf8(path.c_str()), QString::fromLatin1("*_post.py"));
             std::string cMacroPath = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Macro")
                 ->GetASCII("MacroPath",App::Application::getUserMacroDir().c_str());
@@ -265,7 +265,7 @@ private:
                     QFileInfo fileInfo = list.at(i);
                     if (fileInfo.baseName().toStdString() == processor) {
                         if (fileInfo.absoluteFilePath().contains(QString::fromLatin1("PathScripts"))) {
-                            pre << "from PathScripts.post import " << processor;
+                            pre << "from Path.Post.scripts import " << processor;
                         } else {
                             pre << "import " << processor;
                         }

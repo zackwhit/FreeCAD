@@ -161,18 +161,6 @@ Base::ConsoleObserverFile *Application::_pConsoleObserverFile = nullptr;
 
 AppExport std::map<std::string, std::string> Application::mConfig;
 
-// Custom Python exception types
-BaseExport extern PyObject* Base::PyExc_FC_GeneralError;
-BaseExport extern PyObject* Base::PyExc_FC_FreeCADAbort;
-BaseExport extern PyObject* Base::PyExc_FC_XMLBaseException;
-BaseExport extern PyObject* Base::PyExc_FC_XMLParseException;
-BaseExport extern PyObject* Base::PyExc_FC_XMLAttributeError;
-BaseExport extern PyObject* Base::PyExc_FC_UnknownProgramOption;
-BaseExport extern PyObject* Base::PyExc_FC_BadFormatError;
-BaseExport extern PyObject* Base::PyExc_FC_BadGraphError;
-BaseExport extern PyObject* Base::PyExc_FC_ExpressionError;
-BaseExport extern PyObject* Base::PyExc_FC_ParserError;
-BaseExport extern PyObject* Base::PyExc_FC_CADKernelError;
 
 //**************************************************************************
 // Construction and destruction
@@ -419,10 +407,39 @@ void Application::renameDocument(const char *OldName, const char *NewName)
 
 Document* Application::newDocument(const char * Name, const char * UserName, bool createView, bool tempDoc)
 {
-    // get a valid name anyway!
-    if (!Name || Name[0] == '\0')
-        Name = "Unnamed";
-    string name = getUniqueDocumentName(Name, tempDoc);
+    auto getNameAndLabel = [this](const char * Name, const char * UserName) -> std::tuple<std::string, std::string> {
+        bool defaultName = (!Name || Name[0] == '\0');
+
+        // get a valid name anyway!
+        if (defaultName) {
+            Name = "Unnamed";
+        }
+
+        std::string userName;
+        if (UserName && UserName[0] != '\0') {
+            userName = UserName;
+        }
+        else {
+            userName = defaultName ? QObject::tr("Unnamed").toStdString() : Name;
+
+            std::vector<std::string> names;
+            names.reserve(DocMap.size());
+            for (const auto& pos : DocMap) {
+                names.emplace_back(pos.second->Label.getValue());
+            }
+
+            if (!names.empty()) {
+                userName = Base::Tools::getUniqueName(userName, names);
+            }
+        }
+
+        return std::make_tuple(std::string(Name), userName);
+    };
+
+    auto tuple = getNameAndLabel(Name, UserName);
+    std::string name = std::get<0>(tuple);
+    std::string userName = std::get<1>(tuple);
+    name = getUniqueDocumentName(name.c_str(), tempDoc);
 
     // return the temporary document if it exists
     if (tempDoc) {
@@ -431,34 +448,16 @@ Document* Application::newDocument(const char * Name, const char * UserName, boo
             return it->second;
     }
 
-    std::string userName;
-    if (UserName && UserName[0] != '\0') {
-        userName = UserName;
-    }
-    else {
-        userName = Name;
-        std::vector<std::string> names;
-        names.reserve(DocMap.size());
-        std::map<string,Document*>::const_iterator pos;
-        for (pos = DocMap.begin();pos != DocMap.end();++pos) {
-            names.emplace_back(pos->second->Label.getValue());
-        }
-
-        if (!names.empty())
-            userName = Base::Tools::getUniqueName(userName, names);
-    }
-
     // create the FreeCAD document
     std::unique_ptr<Document> newDoc(new Document(name.c_str()));
-    if (tempDoc)
-        newDoc->setStatus(Document::TempDoc, true);
+    newDoc->setStatus(Document::TempDoc, tempDoc);
 
     auto oldActiveDoc = _pActiveDoc;
-    auto doc = newDoc.get();
+    auto doc = newDoc.release(); // now owned by the Application
 
     // add the document to the internal list
-    DocMap[name] = newDoc.release(); // now owned by the Application
-    _pActiveDoc = DocMap[name];
+    DocMap[name] = doc;
+    _pActiveDoc = doc;
 
     // connect the signals to the application for the new document
     _pActiveDoc->signalBeforeChange.connect(std::bind(&App::Application::slotBeforeChangeDocument, this, sp::_1, sp::_2));
@@ -479,14 +478,13 @@ Document* Application::newDocument(const char * Name, const char * UserName, boo
     _pActiveDoc->signalAbortTransaction.connect(std::bind(&App::Application::slotAbortTransaction, this, sp::_1));
     _pActiveDoc->signalStartSave.connect(std::bind(&App::Application::slotStartSaveDocument, this, sp::_1, sp::_2));
     _pActiveDoc->signalFinishSave.connect(std::bind(&App::Application::slotFinishSaveDocument, this, sp::_1, sp::_2));
-    _pActiveDoc->signalChangePropertyEditor.connect(
-            std::bind(&App::Application::slotChangePropertyEditor, this, sp::_1, sp::_2));
+    _pActiveDoc->signalChangePropertyEditor.connect(std::bind(&App::Application::slotChangePropertyEditor, this, sp::_1, sp::_2));
 
     // make sure that the active document is set in case no GUI is up
     {
         Base::PyGILStateLocker lock;
         Py::Object active(_pActiveDoc->getPyObject(), true);
-        Py::Module("FreeCAD").setAttr(std::string("ActiveDocument"),active);
+        Py::Module("FreeCAD").setAttr(std::string("ActiveDocument"), active);
     }
 
     signalNewDocument(*_pActiveDoc, createView);
@@ -582,7 +580,7 @@ std::string Application::getUniqueDocumentName(const char *Name, bool tempDoc) c
     else {
         std::vector<std::string> names;
         names.reserve(DocMap.size());
-        for (pos = DocMap.begin();pos != DocMap.end();++pos) {
+        for (pos = DocMap.begin(); pos != DocMap.end(); ++pos) {
             if (!tempDoc || !pos->second->testStatus(Document::TempDoc))
                 names.push_back(pos->first);
         }
@@ -1995,6 +1993,8 @@ void Application::initTypes()
     App::FeatureTest               ::init();
     App::FeatureTestException      ::init();
     App::FeatureTestColumn         ::init();
+    App::FeatureTestRow            ::init();
+    App::FeatureTestAbsAddress     ::init();
     App::FeatureTestPlacement      ::init();
     App::FeatureTestAttribute      ::init();
 
@@ -2159,6 +2159,7 @@ void parseProgramOptions(int ac, char ** av, const string& exe, variables_map& v
     ("module-path,M", value< vector<string> >()->composing(),"Additional module paths")
     ("python-path,P", value< vector<string> >()->composing(),"Additional python paths")
     ("single-instance", "Allow to run a single instance of the application")
+    ("pass", value< vector<string> >()->multitoken(), "Ignores the following arguments and pass them through to be used by a script")
     ;
 
 
@@ -2326,7 +2327,7 @@ void processProgramOptions(const variables_map& vm, std::map<std::string,std::st
     if (vm.count("module-path")) {
         vector<string> Mods = vm["module-path"].as< vector<string> >();
         string temp;
-        for (vector<string>::const_iterator It= Mods.begin();It != Mods.end();++It)
+        for (vector<string>::const_iterator It = Mods.begin(); It != Mods.end(); ++It)
             temp += *It + ";";
         temp.erase(temp.end()-1);
         mConfig["AdditionalModulePaths"] = temp;
@@ -2334,14 +2335,14 @@ void processProgramOptions(const variables_map& vm, std::map<std::string,std::st
 
     if (vm.count("python-path")) {
         vector<string> Paths = vm["python-path"].as< vector<string> >();
-        for (vector<string>::const_iterator It= Paths.begin();It != Paths.end();++It)
+        for (vector<string>::const_iterator It = Paths.begin(); It != Paths.end(); ++It)
             Base::Interpreter().addPythonPath(It->c_str());
     }
 
     if (vm.count("input-file")) {
         vector<string> files(vm["input-file"].as< vector<string> >());
         int OpenFileCount=0;
-        for (vector<string>::const_iterator It = files.begin();It != files.end();++It) {
+        for (vector<string>::const_iterator It = files.begin(); It != files.end(); ++It) {
 
             //cout << "Input files are: "
             //     << vm["input-file"].as< vector<string> >() << "\n";
@@ -2812,7 +2813,7 @@ void Application::runApplication()
         Base::Console().Log("Exiting on purpose\n");
     }
     else {
-        Base::Console().Log("Unknown Run mode (%d) in main()?!?\n\n",mConfig["RunMode"].c_str());
+        Base::Console().Log("Unknown Run mode (%d) in main()?!?\n\n", mConfig["RunMode"].c_str());
     }
 }
 
@@ -2822,9 +2823,9 @@ void Application::logStatus()
         boost::posix_time::second_clock::local_time());
     Base::Console().Log("Time = %s\n", time_str.c_str());
 
-    for (std::map<std::string,std::string>::iterator It = mConfig.begin();It!= mConfig.end();++It) {
-        Base::Console().Log("%s = %s\n",It->first.c_str(),It->second.c_str());
-    }
+    for (std::map<std::string, std::string>::iterator It = mConfig.begin(); It != mConfig.end();
+         ++It)
+        Base::Console().Log("%s = %s\n", It->first.c_str(), It->second.c_str());
 }
 
 void Application::LoadParameters()
@@ -2926,10 +2927,15 @@ QString getUserHome()
     QString path;
 #if defined(FC_OS_LINUX) || defined(FC_OS_CYGWIN) || defined(FC_OS_BSD) || defined(FC_OS_MACOSX)
     // Default paths for the user specific stuff
-    struct passwd *pwd = getpwuid(getuid());
-    if (!pwd)
+    struct passwd pwd;
+    struct passwd *result;
+    const std::size_t buflen = 16384;
+    std::vector<char> buffer(buflen);
+    int error = getpwuid_r(getuid(), &pwd, buffer.data(), buffer.size(), &result);
+    Q_UNUSED(error)
+    if (!result)
         throw Base::RuntimeError("Getting HOME path from system failed!");
-    path = QString::fromUtf8(pwd->pw_dir);
+    path = QString::fromUtf8(result->pw_dir);
 #else
     path = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
 #endif

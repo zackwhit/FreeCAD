@@ -21,42 +21,36 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
 # include <sstream>
-# include <QRegExp>
-# include <QTextStream>
 # include <QMessageBox>
-# include <Precision.hxx>
+# include <QRegularExpression>
+# include <QRegularExpressionMatch>
 # include <Standard_Failure.hxx>
 #endif
 
-#include <Base/Console.h>
-#include <Base/Interpreter.h>
 #include <App/Application.h>
 #include <App/Document.h>
-#include <Gui/DocumentObserver.h>
-#include <App/Origin.h>
+#include <App/ObjectIdentifier.h>
 #include <App/OriginFeature.h>
 #include <App/Part.h>
-#include <App/ObjectIdentifier.h>
-#include <App/PropertyExpressionEngine.h>
 #include <Gui/Application.h>
-#include <Gui/Document.h>
 #include <Gui/BitmapFactory.h>
-#include <Gui/ViewProvider.h>
-#include <Gui/WaitCursor.h>
-#include <Gui/Selection.h>
 #include <Gui/CommandT.h>
-#include <Mod/Part/Gui/TaskAttacher.h>
-#include <Mod/Part/Gui/AttacherTexts.h>
+#include <Gui/Document.h>
+#include <Gui/DocumentObserver.h>
+#include <Gui/Selection.h>
+#include <Gui/ViewProvider.h>
 #include <Mod/Part/App/AttachExtension.h>
 #include <Mod/Part/App/DatumFeature.h>
+#include <Mod/Part/Gui/AttacherTexts.h>
+#include <Mod/Part/Gui/TaskAttacher.h>
 
-#include "ui_TaskAttacher.h"
 #include "TaskAttacher.h"
+#include "ui_TaskAttacher.h"
+
 
 using namespace PartGui;
 using namespace Gui;
@@ -623,34 +617,43 @@ void TaskAttacher::onRefName(const QString& text, unsigned idx)
     } else {
         // TODO: check validity of the text that was entered: Does subElement actually reference to an element on the obj?
 
-        // We must expect that "text" is the translation of "Face", "Edge" or "Vertex" followed by an ID.
-        QRegExp rx;
-        std::stringstream ss;
+        auto getSubshapeName = [](const QString& part) -> std::string {
+            // We must expect that "text" is the translation of "Face", "Edge" or "Vertex" followed by an ID.
+            QRegularExpression rx;
+            QRegularExpressionMatch match;
+            std::stringstream ss;
 
-        rx.setPattern(QString::fromLatin1("^") + tr("Face") + QString::fromLatin1("(\\d+)$"));
-        if (parts[1].indexOf(rx) >= 0) {
-            int faceId = rx.cap(1).toInt();
-            ss << "Face" << faceId;
-        } else {
-            rx.setPattern(QString::fromLatin1("^") + tr("Edge") + QString::fromLatin1("(\\d+)$"));
-            if (parts[1].indexOf(rx) >= 0) {
-                int lineId = rx.cap(1).toInt();
-                ss << "Edge" << lineId;
-            } else {
-                rx.setPattern(QString::fromLatin1("^") + tr("Vertex") + QString::fromLatin1("(\\d+)$"));
-                if (parts[1].indexOf(rx) >= 0) {
-                    int vertexId = rx.cap(1).toInt();
-                    ss << "Vertex" << vertexId;
-                } else {
-                    //none of Edge/Vertex/Face. May be empty string.
-                    //Feed in whatever user supplied, even if invalid.
-                    ss << parts[1].toLatin1().constData();
-                }
+            rx.setPattern(QString::fromLatin1("^") + tr("Face") + QString::fromLatin1("(\\d+)$"));
+            if (part.indexOf(rx, 0, &match) >= 0) {
+                int faceId = match.captured(1).toInt();
+                ss << "Face" << faceId;
+                return ss.str();
             }
-        }
 
-        line->setProperty("RefName", QByteArray(ss.str().c_str()));
-        subElement = ss.str();
+            rx.setPattern(QString::fromLatin1("^") + tr("Edge") + QString::fromLatin1("(\\d+)$"));
+            if (part.indexOf(rx, 0, &match) >= 0) {
+                int lineId = match.captured(1).toInt();
+                ss << "Edge" << lineId;
+                return ss.str();
+            }
+
+            rx.setPattern(QString::fromLatin1("^") + tr("Vertex") + QString::fromLatin1("(\\d+)$"));
+            if (part.indexOf(rx, 0, &match) >= 0) {
+                int vertexId = match.captured(1).toInt();
+                ss << "Vertex" << vertexId;
+                return ss.str();
+            }
+
+            //none of Edge/Vertex/Face. May be empty string.
+            //Feed in whatever user supplied, even if invalid.
+            ss << part.toLatin1().constData();
+            return ss.str();
+        };
+
+        auto name = getSubshapeName(parts[1]);
+
+        line->setProperty("RefName", QByteArray(name.c_str()));
+        subElement = name;
     }
 
     Part::AttachExtension* pcAttach = ViewProvider->getObject()->getExtensionByType<Part::AttachExtension>();
